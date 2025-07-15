@@ -1,0 +1,202 @@
+# PHASE 5 IMPLEMENTATION QUESTIONS
+# Procedural Maps & World Generation - Specific Details
+
+================================================================================
+                          MAP GENERATION SPECIFICS
+================================================================================
+
+1. MAP SIZE & SCALE:
+   Current combat area seems fairly small. For procedural maps:
+   - Should combat areas be larger to showcase the procedural generation?
+   - Do you want multiple connected areas per wave, or single large arenas?
+   
+   Answer: _______________________________________________________________
+
+2. ZONE PROGRESSION:
+   How should zones be selected for each wave?
+   A) Random selection each wave
+   B) Fixed progression (Plains → Fire → Ice → Poison → etc.)
+   C) Player choice before each wave
+   D) Biome "campaigns" (stay in fire zones for 5 waves, then move to ice)
+   
+   Answer: _______________________________________________________________
+
+3. MAP PERSISTENCE:
+   - Should each wave get a completely new map?
+   - Or should maps persist for multiple waves with modifications?
+   - Should destroyed terrain stay destroyed between waves?
+   
+   Answer: _______________________________________________________________
+
+================================================================================
+                        DESTRUCTIBLE TERRAIN DETAILS
+================================================================================
+
+4. DESTRUCTION SCOPE:
+   How much of the environment should be destructible?
+   A) Only specific objects (rocks, walls, crystals)
+   B) Most terrain except boundaries  
+   C) Everything including floors/ground
+   
+   Answer: _______________________________________________________________
+
+5. DESTRUCTION PERSISTENCE:
+   - Should destroyed terrain affect enemy pathfinding?
+   - Should destroyed areas create new tactical positions?
+   - Do you want "terraform the battlefield" as a core strategy?
+   
+   Answer: _______________________________________________________________
+
+6. DESTRUCTION MECHANICS:
+   - Should different spells destroy terrain differently?
+   - Should there be "construction" spells that create barriers?
+   - Should environmental destruction hurt enemies caught in debris?
+   
+   Answer: _______________________________________________________________
+
+================================================================================
+                        ELEMENTAL ZONE MECHANICS
+================================================================================
+
+7. ZONE EFFECT INTENSITY:
+   How strong should zone effects be on gameplay?
+   A) Subtle (10-20% modifications)
+   B) Moderate (20-40% modifications)  
+   C) Dramatic (40%+ modifications that change strategy)
+   
+   Answer: _______________________________________________________________
+
+8. ELEMENTAL INTERACTIONS:
+   Priority level for spell combination effects?
+   A) Simple (fire melts ice, basic reactions)
+   B) Moderate (5-10 combination types)
+   C) Complex (every element interacts with every other element)
+   
+   Answer: _______________________________________________________________
+
+9. ZONE HAZARDS:
+   Should environmental hazards be:
+   A) Mostly static (lava pools that stay put)
+   B) Some dynamic (geysers that activate periodically)
+   C) Highly dynamic (hazards that move and change constantly)
+   
+   Answer: _______________________________________________________________
+
+================================================================================
+                         VISUAL & PERFORMANCE
+================================================================================
+
+10. VISUAL COMPLEXITY:
+    What level of visual effects for zones?
+    A) Clean and readable (minimal particles, clear gameplay)
+    B) Atmospheric (moderate particles, good ambiance)
+    C) Spectacular (heavy particles, cinematic effects)
+    
+    Answer: _______________________________________________________________
+
+11. PROCEDURAL ART STYLE:
+    For generated textures and effects:
+    A) Simple geometric patterns (fast generation, clean look)
+    B) Detailed pixel art style (more complex generation)
+    C) Mixed approach (simple base with detail overlays)
+    
+    Answer: _______________________________________________________________
+
+12. PERFORMANCE PRIORITY:
+    If we hit performance limits, what should we optimize first?
+    A) Reduce particle effects
+    B) Simplify destructible terrain
+    C) Limit number of environmental hazards
+    D) Reduce map generation complexity
+    
+    Answer: _______________________________________________________________
+
+================================================================================
+                           INTEGRATION CONCERNS
+================================================================================
+
+13. ENEMY SPAWN ADAPTATION:
+    How should enemies adapt to procedural maps?
+    A) Spawn anywhere that's valid
+    B) Use zone-specific spawn logic (fire enemies in fire zones)
+    C) Spawn based on tactical positions (behind cover, near hazards)
+    
+    Answer: _______________________________________________________________
+
+14. WAVE TIMER INTEGRATION:
+    Should zone effects or destruction affect wave timing?
+    A) No - keep wave timing simple
+    B) Yes - environmental events can extend/shorten waves
+    C) Player choice - option to extend wave for more destruction time
+    
+    Answer: _______________________________________________________________
+
+15. SAVE SYSTEM IMPACT:
+    Should we save the current map state?
+    A) No - generate fresh map on load
+    B) Yes - save destroyed terrain and hazard states
+    C) Hybrid - save zone type but regenerate layout
+    
+    Answer: _______________________________________________________________
+
+================================================================================
+                           FUTURE INTEGRATION
+================================================================================
+
+16. DUNGEON PREPARATION:
+    Since Phase 8 will add dungeons, should map generation be designed to:
+    A) Focus on arena generation now, adapt for dungeons later
+    B) Design flexible system that works for both arenas and dungeons
+    C) Create separate systems for arenas vs dungeons
+    
+    Answer: _______________________________________________________________
+
+17. LOOT INTEGRATION:
+    Phase 6 will add loot drops. Should destructible terrain:
+    A) Just drop XP orbs for now
+    B) Drop crafting materials (preparing for loot system)
+    C) Drop temporary power-ups
+    
+    Answer: _______________________________________________________________
+
+18. HUB WORLD PREPARATION:
+    Should zone selection eventually happen from hub world?
+    A) Yes - plan for hub-based zone selection in Phase 7
+    B) No - keep zone selection as automatic/random
+    C) Both - auto mode and manual selection
+    
+    Answer: _______________________________________________________________
+
+================================================================================
+                            SCOPE MANAGEMENT
+================================================================================
+
+19. PHASE 5 MINIMUM VIABLE PRODUCT:
+    If we need to cut features, what's the core that MUST work?
+    A) Just procedural arena generation with basic zone effects
+    B) Include destructible terrain but simpler environmental hazards
+    C) Full feature set but reduced visual polish
+    
+    Answer: _______________________________________________________________
+
+20. EXPANSION PRIORITY:
+    After Phase 5 core is done, which would you want expanded first?
+    A) More zone types and biomes
+    B) More complex elemental interactions
+    C) More sophisticated map layouts
+    D) Better visual effects and atmosphere
+    
+    Answer: _______________________________________________________________
+
+================================================================================
+
+ADDITIONAL NOTES:
+Feel free to add any specific ideas, concerns, or requirements:
+
+___________________________________________________________________________
+
+___________________________________________________________________________
+
+___________________________________________________________________________
+
+================================================================================

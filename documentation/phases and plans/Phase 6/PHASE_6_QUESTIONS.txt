@@ -1,0 +1,282 @@
+# PHASE 6 IMPLEMENTATION QUESTIONS
+# Loot & Equipment System - Diablo-Style Inventory Integration
+
+================================================================================
+                           INVENTORY ARCHITECTURE
+================================================================================
+
+1. INVENTORY GRID SYSTEM:
+   Should we implement a slot-based grid system like Diablo where items occupy multiple slots?
+   A) 10x8 grid with items taking 1x1 to 3x2 slots based on item type
+   B) Fixed slot system with 8 equipment slots + 32 inventory slots (4x8 grid)
+   C) Dynamic scaling grid that grows with progression (starts 6x6, expands to 10x10)
+   
+   Answer: _______________________________________________________________
+
+2. EQUIPMENT SLOT CONFIGURATION:
+   What equipment slots should be available for the wizard character?
+   A) 8 slots: Helmet, Robes, Gloves, Boots, 2x Rings, Amulet, Staff/Wand
+   B) 10 slots: Add Belt and secondary weapon (focus/orb)
+   C) 6 slots: Simplified system with Armor, 2x Accessories, Weapon, 2x Spell Modifiers
+   
+   Answer: _______________________________________________________________
+
+3. INVENTORY UI INTEGRATION:
+   How should the inventory interface integrate with existing game UI?
+   A) Overlay system that pauses game (like current spell toolbar approach)
+   B) Side panel that slides in/out while game continues
+   C) Full-screen mode accessible via Tab key with game pause
+   
+   Answer: _______________________________________________________________
+
+================================================================================
+                           ITEM GENERATION SYSTEM
+================================================================================
+
+4. LOOT RARITY SYSTEM:
+   What rarity tiers should items have?
+   A) 5 tiers: Common(white), Uncommon(blue), Rare(yellow), Epic(purple), Legendary(orange)
+   B) 4 tiers: Normal, Magic, Rare, Unique with increasing affix counts
+   C) 7 tiers: Include Set items and Mythic tier for endgame progression
+   
+   Answer: _______________________________________________________________
+
+5. ITEM AFFIX GENERATION:
+   How should magical properties be generated on items?
+   A) Pool-based system: Each item type has specific affix pools (armor = defense, weapons = damage)
+   B) Universal affix system: All items can roll any appropriate modifier
+   C) Hybrid system: Core affixes per item type + universal bonus affixes
+   
+   Answer: _______________________________________________________________
+
+6. LOOT DROP MECHANICS:
+   How should items drop from enemies in the infinite world system?
+   A) Every enemy has % chance to drop items based on wave level and rarity
+   B) Elite enemies (every 10th kill) guaranteed drops, normal enemies rare chance
+   C) Loot tied to biome rarity - rare chunks have better loot multipliers
+   
+   Answer: _______________________________________________________________
+
+================================================================================
+                         SPELL MODIFICATION SYSTEM
+================================================================================
+
+7. EQUIPMENT SPELL MODIFIERS:
+   How should equipment modify spell behavior?
+   A) Stat-based modifiers: +damage%, +cast speed%, +mana efficiency%, +range%
+   B) Behavior modifiers: "Fireball chains to 2 targets", "Heal creates damage shield"
+   C) Both systems: Basic stats + unique legendary effects that change spell mechanics
+   
+   Answer: _______________________________________________________________
+
+8. SPELL POWER INTEGRATION:
+   How should equipment interact with existing spell power adjustment system?
+   A) Replace power adjustment with equipment-based power levels
+   B) Equipment provides base stats, power adjustment adds temporary bonuses
+   C) Combined system: Equipment sets base power, adjustment adds +/- modifications
+   
+   Answer: _______________________________________________________________
+
+9. SET ITEM BONUSES:
+   Should set items provide special bonuses when multiple pieces are equipped?
+   A) Yes, 2-piece and 4-piece set bonuses that unlock new spell combinations
+   B) No, focus on individual item optimization and affix hunting
+   C) Set bonuses only for endgame content, early/mid-game uses individual items
+   
+   Answer: _______________________________________________________________
+
+================================================================================
+                           TECHNICAL INTEGRATION
+================================================================================
+
+10. SAVE SYSTEM INTEGRATION:
+    How should inventory data integrate with existing RunSaveManager/MetaSaveManager?
+    A) Inventory as part of RunSaveManager (lost on death, rebuilt each run)
+    B) Equipment in MetaSaveManager (persistent), consumables in RunSaveManager
+    C) Full persistence: All items and equipment saved across runs and sessions
+    
+    Answer: _______________________________________________________________
+
+11. ITEM DATA ARCHITECTURE:
+    What class structure should we use for items?
+    A) Single ItemData resource with type enum and dynamic affix arrays
+    B) Base ItemData class with specialized subclasses (WeaponData, ArmorData, etc.)
+    C) Component-based system with ItemBase + ItemAffixes + ItemVisuals components
+    
+    Answer: _______________________________________________________________
+
+12. PERFORMANCE CONSIDERATIONS:
+    How should we handle item generation and storage performance?
+    A) Pre-generate item pools at startup, select from pools during gameplay
+    B) Generate items on-demand with caching for frequently accessed items
+    C) Hybrid: Pre-generate common items, procedural generation for rare/unique items
+    
+    Answer: _______________________________________________________________
+
+================================================================================
+                               USER EXPERIENCE
+================================================================================
+
+13. ITEM COMPARISON SYSTEM:
+    How should players compare items when deciding to equip them?
+    A) Tooltip comparison showing stat differences (+5 damage, -2 mana cost)
+    B) Side-by-side view with current equipment vs new item
+    C) Quick preview system showing total character stats with/without item
+    
+    Answer: _______________________________________________________________
+
+14. INVENTORY MANAGEMENT:
+    What auto-management features should be included?
+    A) Auto-pickup for currency/materials, manual pickup for equipment
+    B) Auto-sort button, auto-sell junk items, smart stacking for consumables
+    C) Minimal auto-features: Player manually manages all inventory decisions
+    
+    Answer: _______________________________________________________________
+
+15. ITEM VISUAL REPRESENTATION:
+    How should items be visually represented in the world and inventory?
+    A) 2D sprites with rarity-based borders and glow effects
+    B) Simple colored icons with text labels for identification
+    C) Detailed item art with particle effects for higher rarities
+    
+    Answer: _______________________________________________________________
+
+================================================================================
+                           CRAFTING & MODIFICATION
+================================================================================
+
+16. ITEM CRAFTING SYSTEM:
+    Should players be able to craft or modify items?
+    A) No crafting: Pure loot-based progression like classic Diablo
+    B) Simple enhancement: Upgrade item quality/level using materials
+    C) Full crafting: Create items from materials + modify existing item affixes
+    
+    Answer: _______________________________________________________________
+
+17. CURRENCY & MATERIALS:
+    What currencies should the loot system use?
+    A) Single currency (gold) for buying/selling, no crafting materials
+    B) Multiple currencies: Gold, gems, elemental essences, rare materials
+    C) Material-based economy: Items salvage into materials, no traditional currency
+    
+    Answer: _______________________________________________________________
+
+18. ENCHANTMENT SYSTEM:
+    How should players improve their existing equipment?
+    A) Fixed upgrade paths: +1, +2, +3 enhancement levels with materials
+    B) Socket system: Items have sockets, gems provide bonuses
+    C) Reroll system: Spend currency to reroll item affixes randomly
+    
+    Answer: _______________________________________________________________
+
+================================================================================
+                           PROGRESSION INTEGRATION
+================================================================================
+
+19. ITEM LEVEL SCALING:
+    How should item power scale with game progression?
+    A) Items scale with wave level: Wave 50 drops stronger base items than Wave 10
+    B) Fixed item levels with different tiers unlocked by progression milestones
+    C) Zone-based scaling: Rare biome chunks have higher item level ranges
+    
+    Answer: _______________________________________________________________
+
+20. SPELL LEARNING INTEGRATION:
+    How should new spells be acquired through the loot system?
+    A) Spell books as loot drops that teach new spells permanently
+    B) Equipment-based spells: Items grant temporary spell access while equipped
+    C) Separate spell progression: Loot only modifies existing 10 spells
+    
+    Answer: _______________________________________________________________
+
+21. CHARACTER STAT INTEGRATION:
+    How should equipment stats interact with existing intelligence/wisdom systems?
+    A) Equipment provides raw stats that feed into existing stat calculations
+    B) Parallel progression: Equipment bonuses separate from character stats
+    C) Replacement system: Equipment becomes primary source of character power
+    
+    Answer: _______________________________________________________________
+
+================================================================================
+                           BALANCE & ECONOMY
+================================================================================
+
+22. VENDOR/TRADING SYSTEM:
+    How should players buy/sell items?
+    A) Simple vendor NPCs in hub world with fixed item stocks
+    B) Dynamic vendor system with rotating stock based on progression
+    C) No vendors: Pure loot-based acquisition with item salvaging for materials
+    
+    Answer: _______________________________________________________________
+
+23. ITEM DURABILITY:
+    Should equipment degrade with use?
+    A) No durability: Items last forever once acquired
+    B) Durability system: Items need repair with gold/materials
+    C) Soft durability: Items lose effectiveness but never break completely
+    
+    Answer: _______________________________________________________________
+
+24. STORAGE LIMITATIONS:
+    How much inventory space should players have?
+    A) Limited inventory forces difficult decisions about what to keep
+    B) Generous storage with stash expansion options
+    C) Unlimited storage: Focus on item hunting rather than management
+    
+    Answer: _______________________________________________________________
+
+================================================================================
+                           IMPLEMENTATION PRIORITY
+================================================================================
+
+25. PHASE 6 DAY BREAKDOWN:
+    How should the 5-day implementation be structured?
+    A) Day 1-2: Item data + generation, Day 3: Inventory UI, Day 4: Equipment effects, Day 5: Integration + testing
+    B) Day 1: Core systems, Day 2: UI, Day 3: Spell integration, Day 4: Save system, Day 5: Balance + polish
+    C) Day 1: Planning + architecture, Day 2-3: Implementation, Day 4: Integration, Day 5: Testing + bug fixes
+    
+    Answer: _______________________________________________________________
+
+================================================================================
+                           FUTURE-PROOFING
+================================================================================
+
+26. ENDGAME SCALABILITY:
+    How should the loot system prepare for Phase 9 endgame content?
+    A) Design for infinite progression: Item levels and affixes scale indefinitely
+    B) Plateau design: Best items at reasonable power level, focus on variety
+    C) Prestige integration: Loot system resets/evolves with prestige mechanics
+    
+    Answer: _______________________________________________________________
+
+27. HUB WORLD PREPARATION:
+    How should this system prepare for Phase 7 hub world integration?
+    A) Design vendors and storage systems that can be easily moved to hub
+    B) Keep loot system entirely within infinite world, hub provides services only
+    C) Hybrid approach: Basic systems in world, advanced features in hub
+    
+    Answer: _______________________________________________________________
+
+28. MULTIPLAYER CONSIDERATION:
+    Should the loot system be designed with potential multiplayer in mind?
+    A) Single-player focused: Ignore multiplayer considerations for cleaner design
+    B) Multiplayer-ready: Design loot sharing, trading, and instancing systems
+    C) Convertible: Single-player first, but avoid decisions that prevent multiplayer
+    
+    Answer: _______________________________________________________________
+
+================================================================================
+                               FINAL NOTES
+================================================================================
+
+Additional considerations or concerns about the loot system implementation:
+
+Answer: _______________________________________________________________
+
+Integration priorities with existing systems (SpellComponent, GameEvents, etc.):
+
+Answer: _______________________________________________________________
+
+Preferred complexity level for Phase 6 (simple foundation vs full-featured):
+
+Answer: _______________________________________________________________

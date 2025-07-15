@@ -1,0 +1,178 @@
+# PHASE 5-9 PLANNING QUESTIONS
+# Wizard RPG - Next Phase Development Planning
+# Please answer these questions to help plan the next 5 phases
+
+================================================================================
+                            GAME VISION & SCOPE
+================================================================================
+
+1. TARGET PLAYTIME: 
+   Are you aiming for a 10-hour experience or 100+ hour game?
+   
+   Answer: _______________________________________________________________
+
+2. COMPLEXITY PREFERENCE: 
+   Do you want more systems (like Path of Exile) or streamlined (like Vampire Survivors)?
+   
+   Answer: _______________________________________________________________
+
+3. ART DIRECTION: 
+   Should I focus on procedural generation or do you plan custom art assets?
+   
+   Answer: _______________________________________________________________
+
+================================================================================
+                           TECHNICAL PRIORITIES
+================================================================================
+
+4. PERFORMANCE TARGETS: 
+   Should I optimize for mobile eventually or desktop-only?
+   
+   Answer: _______________________________________________________________
+
+5. MODDING SUPPORT: 
+   Any interest in making the game moddable?
+   
+   Answer: _______________________________________________________________
+
+6. MULTIPLAYER: 
+   Any future plans for co-op or competitive modes?
+   
+   Answer: _______________________________________________________________
+
+================================================================================
+                           CONTENT DIRECTION
+================================================================================
+
+7. NARRATIVE ELEMENTS: 
+   Do you want story/lore or focus purely on gameplay?
+   
+   Answer: _______________________________________________________________
+
+8. SPELL VARIETY: 
+   How many total spells should the final game have (10, 20, 50+)?
+   
+   Answer: _______________________________________________________________
+
+9. ENEMY VARIETY: 
+   Similar question for enemy types and bosses?
+   
+   Answer: _______________________________________________________________
+
+================================================================================
+                         PROGRESSION PHILOSOPHY
+================================================================================
+
+10. POWER SCALING: 
+    Should players become godlike or maintain challenge?
+    
+    Answer: _______________________________________________________________
+
+11. CHOICE COMPLEXITY: 
+    Simple builds or deep character customization?
+    
+    Answer: _______________________________________________________________
+
+12. GRIND TOLERANCE: 
+    How much repetition is acceptable for rewards?
+    
+    Answer: _______________________________________________________________
+
+================================================================================
+                         PHASE-SPECIFIC QUESTIONS
+================================================================================
+
+PHASE 5 - ENHANCED COMBAT & VISUAL EFFECTS:
+13. Do you want spell combination mechanics (cast fire+ice = steam cloud)?
+    
+    Answer: _______________________________________________________________
+
+14. Should spells have elemental weaknesses/resistances on enemies?
+    
+    Answer: _______________________________________________________________
+
+15. Any specific visual style preferences (realistic, cartoonish, pixel art)?
+    
+    Answer: _______________________________________________________________
+
+PHASE 6 - LOOT & EQUIPMENT SYSTEM:
+16. Should items modify spell behavior (faster casting, extra projectiles)?
+    
+    Answer: _______________________________________________________________
+
+17. Do you want crafting/upgrading items or just drops?
+    
+    Answer: _______________________________________________________________
+
+18. How complex should inventory be (simple slots vs. Diablo-style grid)?
+    
+    Answer: _______________________________________________________________
+
+PHASE 7 - HUB WORLD & PERSISTENT PROGRESSION:
+19. Should the hub have exploration elements or focus on menu-based interactions?
+    
+    Answer: _______________________________________________________________
+
+20. Do you want base defense elements (tower gets attacked)?
+    
+    Answer: _______________________________________________________________
+
+21. Any preference for NPC interaction style (dialogue trees, simple merchants)?
+    
+    Answer: _______________________________________________________________
+
+PHASE 8 - ADVANCED ENEMY MECHANICS:
+22. Should bosses have multiple phases with different attack patterns?
+    
+    Answer: _______________________________________________________________
+
+23. Do you want enemies that specifically counter certain spell types?
+    
+    Answer: _______________________________________________________________
+
+24. Any interest in environmental interaction (enemies using cover, destructible terrain)?
+    
+    Answer: _______________________________________________________________
+
+PHASE 9 - ENDGAME & REPLAYABILITY:
+25. Should prestige reset everything or keep certain progress?
+    
+    Answer: _______________________________________________________________
+
+26. Any interest in seasonal content or rotating challenges?
+    
+    Answer: _______________________________________________________________
+
+27. Do you want competitive elements (leaderboards, score chasing)?
+    
+    Answer: _______________________________________________________________
+
+================================================================================
+                              PRIORITY RANKING
+================================================================================
+
+28. Please rank these phases in order of interest (1 = most interested, 5 = least):
+
+    ___ Phase 5: Enhanced Combat & Visual Effects
+    ___ Phase 6: Loot & Equipment System  
+    ___ Phase 7: Hub World & Persistent Progression
+    ___ Phase 8: Advanced Enemy Mechanics
+    ___ Phase 9: Endgame & Replayability
+
+29. Any specific features from other games you'd like to incorporate?
+
+    Answer: _______________________________________________________________
+    
+30. Any features you definitely DON'T want?
+
+    Answer: _______________________________________________________________
+
+================================================================================
+
+INSTRUCTIONS:
+1. Fill out this form with your preferences
+2. Save the file when complete
+3. Let me know when you're done and I'll create detailed phase plans
+4. Feel free to add additional notes or ideas anywhere in this document
+
+================================================================================

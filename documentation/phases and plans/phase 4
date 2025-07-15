@@ -1,0 +1,1425 @@
+# PHASE 4: GAME FOUNDATION IMPLEMENTATION PLAN (REVISED)
+## Transform Prototype into Professional RPG (4 Days)
+
+### 🎮 PROJECT OVERVIEW
+
+**Current State**: Wizard RPG with functional combat prototype
+- ✅ WASD movement, dodge, 5 spell slots
+- ✅ Wave progression (1-10+), 5 enemy types  
+- ✅ XP/leveling with stat allocation
+- ✅ Basic save/load system
+- ❌ No main menu or proper game flow
+- ❌ Game starts directly in combat
+- ❌ No persistent character progression
+
+**Phase 4 Goal**: Professional game structure with persistent progression
+- Main menu with New Game/Continue/Quit  
+- Character progression persists between runs (RPG-style, not roguelike)
+- Run saves for suspend/resume
+- Death → stats → retry flow (keep character progress)
+- ESC menu overhaul
+- Settings framework
+- Smooth transitions
+- **Architecture ready for Phase 7+ hub world**
+
+### ⚙️ AUTOLOAD ORDER (Project Settings)
+1. GameManager (referenced by others)
+2. WaveManager (referenced by save systems)
+3. GameStateManager
+4. MetaSaveManager
+5. RunSaveManager
+6. SettingsManager
+7. SceneTransition
+
+---
+
+## 📅 DAY 1: SAVE ARCHITECTURE & GAME STATES
+
+### Morning (2 hours): Save System Architecture
+
+**Create `scripts/core/MetaSaveManager.gd`** (Autoload) - Handles persistent character data:
+```gdscript
+extends Node
+
+const SAVE_VERSION = 1
+const MAX_SLOTS = 3
+var current_slot: int = 1
+var meta_data = {
+    "version": SAVE_VERSION,
+    "total_xp": 0,
+    "lifetime_kills": 0,
+    "highest_wave": 0,
+    "unlocked_spells": ["fireball"],
+    "currency": 0,
+    "total_playtime": 0.0,
+    "first_played": 0,
+    "last_played": 0
+}
+
+func get_save_path(slot: int) -> String:
+    return "user://meta_save_slot%d.dat" % slot
+
+func get_all_slots_info() -> Array:
+    var slots = []
+    for i in range(1, MAX_SLOTS + 1):
+        var path = get_save_path(i)
+        if FileAccess.file_exists(path):
+            var file = FileAccess.open(path, FileAccess.READ)
+            if file:
+                # Load with decompression
+                var original_size = file.get_32()
+                var compressed_buffer = file.get_buffer(file.get_length() - file.get_position())
+                file.close()
+                
+                var decompressed = compressed_buffer.decompress(original_size, FileAccess.COMPRESSION_GZIP)
+                var data_string = decompressed.get_string_from_utf8()
+                var data = str_to_var(data_string)
+                
+                slots.append({
+                    "slot": i,
+                    "exists": true,
+                    "character_level": data.get("character_level", 1),
+                    "total_xp": data.get("total_xp", 0),
+                    "highest_wave": data.get("highest_wave", 0),
+                    "last_played": data.get("last_played", 0)
+                })
+            else:
+                slots.append({"slot": i, "exists": false})
+        else:
+            slots.append({"slot": i, "exists": false})
+    return slots
+
+func set_current_slot(slot: int):
+    if slot < 1 or slot > MAX_SLOTS:
+        push_error("Invalid slot number: " + str(slot))
+        return
+    current_slot = slot
+    load_meta()
+
+func _ready():
+    # Don't auto-load - wait for slot selection
+    pass
+
+func save_meta():
+    var path = get_save_path(current_slot)
+    var file = FileAccess.open(path, FileAccess.WRITE)
+    if file == null:
+        push_error("Failed to save meta data")
+        return false
+    
+    # Update timestamps
+    if meta_data.first_played == 0:
+        meta_data.first_played = Time.get_unix_time_from_system()
+    meta_data.last_played = Time.get_unix_time_from_system()
+    
+    # Save with compression
+    var data_string = var_to_str(meta_data)
+    file.store_32(data_string.length())  # Store original size
+    file.store_buffer(data_string.to_utf8_buffer().compress(FileAccess.COMPRESSION_GZIP))
+    file.close()
+    return true
+
+func load_meta(slot: int = -1):
+    if slot == -1:
+        slot = current_slot
+        
+    var path = get_save_path(slot)
+    if not FileAccess.file_exists(path):
+        # Create default for new slot
+        meta_data = {
+            "version": SAVE_VERSION,
+            "total_xp": 0,
+            "character_level": 1,
+            "unspent_stat_points": 0,
+            "character_stats": {
+                "strength": 10,
+                "intelligence": 10,
+                "agility": 10
+            },
+            "lifetime_kills": 0,
+            "highest_wave": 0,
+            "unlocked_spells": ["fireball"],
+            "currency": 0,
+            "total_playtime": 0.0,
+            "first_played": 0,
+            "last_played": 0,
+            "steam_cloud_enabled": true
+        }
+        save_meta()
+        return
+        
+    var file = FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        push_error("Failed to load meta data")
+        return
+    
+    # Load with decompression
+    var original_size = file.get_32()
+    var compressed_buffer = file.get_buffer(file.get_length() - file.get_position())
+    file.close()
+    
+    var decompressed = compressed_buffer.decompress(original_size, FileAccess.COMPRESSION_GZIP)
+    var data_string = decompressed.get_string_from_utf8()
+    var loaded_data = str_to_var(data_string)
+    
+    # Version migration if needed
+    if not loaded_data.has("version") or loaded_data.version < SAVE_VERSION:
+        _migrate_meta_save(loaded_data)
+    else:
+        meta_data = loaded_data
+
+func delete_slot(slot: int):
+    if slot == current_slot:
+        push_error("Cannot delete current slot")
+        return false
+        
+    var path = get_save_path(slot)
+    if FileAccess.file_exists(path):
+        DirAccess.remove_absolute(path)
+        return true
+    return false
+
+func _migrate_meta_save(old_data: Dictionary):
+    # Preserve existing data while adding new fields
+    for key in old_data:
+        if meta_data.has(key):
+            meta_data[key] = old_data[key]
+    
+    # Ensure new fields exist with defaults
+    if not meta_data.has("character_level"):
+        meta_data.character_level = 1
+    if not meta_data.has("unspent_stat_points"):
+        meta_data.unspent_stat_points = 0
+    if not meta_data.has("character_stats"):
+        meta_data.character_stats = {
+            "strength": 10,
+            "intelligence": 10,
+            "agility": 10
+        }
+    if not meta_data.has("steam_cloud_enabled"):
+        meta_data.steam_cloud_enabled = true
+    
+    meta_data.version = SAVE_VERSION
+    save_meta()
+
+func add_run_rewards(wave: int, kills: int, time: float, player_data: Dictionary):
+    meta_data.lifetime_kills += kills
+    meta_data.total_playtime += time
+    
+    # Update persistent character progress
+    meta_data.total_xp = player_data.xp
+    meta_data.character_level = player_data.level
+    meta_data.unspent_stat_points = player_data.stat_points
+    meta_data.character_stats = player_data.stats
+    
+    if wave > meta_data.highest_wave:
+        meta_data.highest_wave = wave
+    
+    if save_meta():
+        return true
+    else:
+        push_error("Failed to save meta progress!")
+        return false
+
+func update_character_progress(level: int, xp: int, stat_points: int, stats: Dictionary):
+    # Called when player levels up during gameplay
+    meta_data.character_level = level
+    meta_data.total_xp = xp
+    meta_data.unspent_stat_points = stat_points
+    meta_data.character_stats = stats
+    save_meta()
+```
+
+**Create `scripts/core/RunSaveManager.gd`** (Autoload) - Handles suspend/resume for current run:
+```gdscript
+extends Node
+
+const SAVE_VERSION = 1
+var run_path = "user://run_save.dat"
+var run_backup_path = "user://run_save.dat.bak"
+var current_run_start_time: float = 0.0
+var pending_delete: bool = false
+
+func get_run_save_path() -> String:
+    return "user://run_save_slot%d.dat" % MetaSaveManager.current_slot
+
+func get_run_backup_path() -> String:
+    return "user://run_save_slot%d.dat.bak" % MetaSaveManager.current_slot
+
+func has_active_run() -> bool:
+    return FileAccess.file_exists(get_run_save_path()) and not pending_delete
+
+func save_run():
+    if not is_instance_valid(GameManager.player):
+        push_error("Cannot save run - player not valid")
+        return false
+    
+    var save_path = get_run_save_path()
+    var backup_path = get_run_backup_path()
+    
+    # Backup existing save first
+    if FileAccess.file_exists(save_path):
+        DirAccess.copy_absolute(save_path, backup_path)
+    
+    var data = {
+        "version": SAVE_VERSION,
+        "slot": MetaSaveManager.current_slot,
+        "wave": WaveManager.current_wave,
+        "kills": WaveManager.total_enemies_killed,
+        "run_time": Time.get_ticks_msec() / 1000.0 - current_run_start_time,
+        "xp_earned": GameManager.player.xp,  # Track XP earned this run
+        "location": "combat",  # Future: "hub" or "combat"
+        "player": {
+            "position": [GameManager.player.global_position.x, GameManager.player.global_position.y],
+            "hp": GameManager.player.hp,
+            "max_hp": GameManager.player.max_hp,
+            "mana": GameManager.player.mana,
+            "max_mana": GameManager.player.max_mana,
+            "level": GameManager.player.level,
+            "xp": GameManager.player.xp,
+            "xp_to_next_level": GameManager.player.xp_to_next_level,
+            "stat_points": GameManager.player.stat_points,
+            "stats": GameManager.player.stats
+        },
+        "timestamp": Time.get_unix_time_from_system()
+    }
+    
+    var file = FileAccess.open(save_path, FileAccess.WRITE)
+    if file == null:
+        push_error("Failed to save run data")
+        return false
+    
+    # Save with compression
+    var data_string = var_to_str(data)
+    file.store_32(data_string.length())
+    file.store_buffer(data_string.to_utf8_buffer().compress(FileAccess.COMPRESSION_GZIP))
+    file.close()
+    return true
+
+func load_run() -> Dictionary:
+    if not has_active_run():
+        return {}
+    
+    var save_path = get_run_save_path()
+    var file = FileAccess.open(save_path, FileAccess.READ)
+    if file == null:
+        push_error("Failed to load run data")
+        return {}
+    
+    # Load with decompression
+    var original_size = file.get_32()
+    var compressed_buffer = file.get_buffer(file.get_length() - file.get_position())
+    file.close()
+    
+    var decompressed = compressed_buffer.decompress(original_size, FileAccess.COMPRESSION_GZIP)
+    var data_string = decompressed.get_string_from_utf8()
+    var data = str_to_var(data_string)
+    
+    # Verify this save belongs to current slot
+    if data.has("slot") and data.slot != MetaSaveManager.current_slot:
+        push_error("Run save is for different slot!")
+        return {}
+    
+    # Restore run timer
+    if data.has("run_time"):
+        current_run_start_time = Time.get_ticks_msec() / 1000.0 - data.run_time
+    
+    return data
+
+func delete_run():
+    var save_path = get_run_save_path()
+    var backup_path = get_run_backup_path()
+    
+    if FileAccess.file_exists(save_path):
+        DirAccess.remove_absolute(save_path)
+    if FileAccess.file_exists(backup_path):
+        DirAccess.remove_absolute(backup_path)
+    pending_delete = false
+
+func mark_for_deletion():
+    pending_delete = true
+
+func start_new_run():
+    current_run_start_time = Time.get_ticks_msec() / 1000.0
+    delete_run()  # Clear any existing
+
+func restore_from_backup() -> bool:
+    var save_path = get_run_save_path()
+    var backup_path = get_run_backup_path()
+    
+    if FileAccess.file_exists(backup_path):
+        DirAccess.copy_absolute(backup_path, save_path)
+        return true
+    return false
+```
+
+### Afternoon (2 hours): GameStateManager & Main Menu
+
+**Create `scripts/core/GameStateManager.gd`** (Autoload):
+```gdscript
+extends Node
+
+enum GameState { MAIN_MENU, HUB, PLAYING, PAUSED, GAME_OVER }
+
+var current_state: GameState = GameState.MAIN_MENU
+var previous_state: GameState = GameState.MAIN_MENU
+signal state_changed(new_state, old_state)
+
+func _ready():
+    process_mode = Node.PROCESS_MODE_ALWAYS
+
+func change_state(new_state: GameState):
+    if current_state == new_state:
+        return
+        
+    previous_state = current_state
+    current_state = new_state
+    
+    match current_state:
+        GameState.MAIN_MENU:
+            get_tree().paused = false
+            Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+        GameState.HUB:
+            get_tree().paused = false
+            Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+        GameState.PLAYING:
+            get_tree().paused = false
+            Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+        GameState.PAUSED:
+            get_tree().paused = true
+            Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+            # Auto-save when pausing
+            if is_instance_valid(GameManager.player) and not GameManager.player.is_dead:
+                RunSaveManager.save_run()
+        GameState.GAME_OVER:
+            get_tree().paused = true
+            Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+    
+    state_changed.emit(current_state, previous_state)
+
+func get_previous_state() -> GameState:
+    return previous_state
+```
+
+**Create `scenes/ui/MainMenu.tscn`**:
+- Control (Full Rect)
+- Background (TextureRect or ColorRect)
+- SlotSelection Panel (initially visible):
+  - "Select Save Slot" title
+  - VBoxContainer with 3 slot buttons
+  - Each slot shows: Wave reached, Total XP, Last played
+- Main Panel (initially hidden):
+  - Title Label: "Wizard RPG"
+  - Current slot info (top right)
+  - VBoxContainer (centered):
+    - New Game Button
+    - Continue Button
+    - Settings Button
+    - Change Slot Button
+    - Quit Button
+  - Version Label (bottom right): "v0.4.0"
+- ConfirmationDialog (for abandon run)
+
+**Create `scripts/ui/MainMenu.gd`**:
+```gdscript
+extends Control
+
+@onready var slot_panel = $SlotSelection
+@onready var main_panel = $MainPanel
+@onready var continue_button = $MainPanel/VBox/ContinueButton
+@onready var confirm_dialog = $ConfirmDialog
+@onready var version_label = $MainPanel/VersionLabel
+@onready var slot_info_label = $MainPanel/SlotInfo
+
+var slot_buttons = []
+
+func _ready():
+    GameStateManager.change_state(GameStateManager.GameState.MAIN_MENU)
+    
+    # Show version
+    version_label.text = "v0.4.0"
+    
+    # Setup main menu buttons
+    $MainPanel/VBox/NewGameButton.pressed.connect(_on_new_game)
+    $MainPanel/VBox/ContinueButton.pressed.connect(_on_continue) 
+    $MainPanel/VBox/SettingsButton.pressed.connect(_on_settings)
+    $MainPanel/VBox/ChangeSlotButton.pressed.connect(_show_slot_selection)
+    $MainPanel/VBox/QuitButton.pressed.connect(_on_quit)
+    
+    # Setup slot buttons
+    for i in range(3):
+        var btn = $SlotSelection/VBox.get_child(i)
+        btn.pressed.connect(_on_slot_selected.bind(i + 1))
+        slot_buttons.append(btn)
+    
+    # Setup abandon run dialog
+    confirm_dialog.add_button("Cancel", true)
+    confirm_dialog.get_ok_button().text = "Abandon Run"
+    confirm_dialog.dialog_text = "Abandon current run? All progress will be lost."
+    confirm_dialog.confirmed.connect(_confirm_new_game)
+    
+    # Show slot selection first
+    _show_slot_selection()
+
+func _show_slot_selection():
+    main_panel.hide()
+    slot_panel.show()
+    
+    # Update slot info
+    var slots = MetaSaveManager.get_all_slots_info()
+    for i in range(3):
+        var slot_data = slots[i]
+        var btn = slot_buttons[i]
+        
+        if slot_data.exists:
+            var time_str = _format_last_played(slot_data.last_played)
+            btn.text = "Slot %d\nLevel %d | Wave %d\n%s" % [
+                i + 1,
+                slot_data.character_level,
+                slot_data.highest_wave,
+                time_str
+            ]
+        else:
+            btn.text = "Slot %d\n[Empty]" % [i + 1]
+
+func _format_last_played(timestamp: float) -> String:
+    if timestamp == 0:
+        return "Never"
+    
+    var current = Time.get_unix_time_from_system()
+    var diff = current - timestamp
+    
+    if diff < 3600:  # Less than 1 hour
+        return "%d min ago" % [diff / 60]
+    elif diff < 86400:  # Less than 1 day
+        return "%d hours ago" % [diff / 3600]
+    else:
+        return "%d days ago" % [diff / 86400]
+
+func _on_slot_selected(slot: int):
+    MetaSaveManager.set_current_slot(slot)
+    _show_main_menu()
+
+func _show_main_menu():
+    slot_panel.hide()
+    main_panel.show()
+    
+    # Update slot info
+    var level = MetaSaveManager.meta_data.character_level
+    slot_info_label.text = "Slot %d - Level %d" % [MetaSaveManager.current_slot, level]
+    
+    # Update continue button
+    _update_continue_button()
+
+func _update_continue_button():
+    var has_run = RunSaveManager.has_active_run()
+    continue_button.visible = has_run
+    continue_button.disabled = not has_run
+
+func _on_new_game():
+    if RunSaveManager.has_active_run():
+        confirm_dialog.popup_centered()
+    else:
+        _start_new_game()
+
+func _confirm_new_game():
+    _start_new_game()
+
+func _start_new_game():
+    RunSaveManager.start_new_run()
+    GameStateManager.change_state(GameStateManager.GameState.PLAYING)
+    SceneTransition.transition_to("res://scenes/Main.tscn")
+    # TODO Phase 7+: Transition to hub world instead
+    # SceneTransition.transition_to("res://scenes/HubWorld.tscn")
+
+func _on_continue():
+    GameStateManager.change_state(GameStateManager.GameState.PLAYING)
+    SceneTransition.transition_to("res://scenes/Main.tscn")
+    # TODO Phase 7+: Check if player was in hub or combat
+
+func _on_settings():
+    var settings_scene = preload("res://scenes/ui/SettingsMenu.tscn")
+    var settings = settings_scene.instantiate()
+    add_child(settings)
+
+func _on_quit():
+    get_tree().quit()
+```
+
+## 🏰 HUB WORLD INTEGRATION (Future Phase 7+)
+
+The current architecture is designed to support a hub world system:
+
+### Future Game Flow:
+```
+Main Menu 
+    ↓
+Hub World (inventory, tower, shops, NPC interactions)
+    ↓
+Launch Combat → Wave Battles → Death/Victory
+    ↓
+Return to Hub (keep all XP/items gained)
+```
+
+### What will change:
+1. **New GameState.HUB** - Already added to enum
+2. **New scene**: `HubWorld.tscn` with:
+   - Player inventory management
+   - Tower/base building
+   - Spell selection/loadout
+   - NPCs and shops
+   - Portal/door to launch waves
+
+3. **Modified flow**:
+   - "New Game" → Hub instead of combat
+   - Death → Hub instead of main menu
+   - Save system tracks hub position too
+
+4. **RunSaveManager enhancement**:
+   ```gdscript
+   "location": "hub" or "combat",
+   "hub_position": Vector2,
+   "current_loadout": ["spell1", "spell2", ...],
+   ```
+
+The current Phase 4 implementation provides the foundation - just redirect scene transitions when ready!
+
+---
+
+## 📅 DAY 2: GAME FLOW & DEATH SYSTEM
+
+### Morning (2 hours): Game Over Screen
+
+**Create `scenes/ui/GameOverScreen.tscn`**:
+- Control (Full Rect, process_mode = WHEN_PAUSED)
+- Semi-transparent background (ColorRect with alpha)
+- Panel (centered):
+  - "Game Over" title
+  - Stats container (VBoxContainer):
+    - Wave reached Label
+    - Enemies killed Label
+    - Time survived Label
+    - Character Level Label (with glow effect)
+    - Total XP Label
+  - Button container (HBoxContainer):
+    - New Run button
+    - Main Menu button
+
+**Create `scripts/ui/GameOverScreen.gd`**:
+```gdscript
+extends Control
+
+var run_stats = {}
+
+func _ready():
+    hide()
+    process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+    $Panel/Buttons/NewRunButton.pressed.connect(_on_new_run)
+    $Panel/Buttons/MainMenuButton.pressed.connect(_on_main_menu)
+
+func show_game_over(stats: Dictionary):
+    run_stats = stats
+    
+    # Update UI
+    $Panel/Stats/WaveLabel.text = "Wave Reached: " + str(stats.wave)
+    $Panel/Stats/KillsLabel.text = "Enemies Killed: " + str(stats.kills)
+    $Panel/Stats/TimeLabel.text = "Time Survived: " + _format_time(stats.time)
+    
+    # Show character level and XP
+    var player_data = stats.player_data
+    $Panel/Stats/LevelLabel.text = "Character Level: " + str(player_data.level)
+    $Panel/Stats/XPLabel.text = "Total XP: " + str(player_data.xp)
+    
+    # Save character progress
+    MetaSaveManager.add_run_rewards(stats.wave, stats.kills, stats.time, player_data)
+    
+    # Animate level display
+    var tween = create_tween()
+    $Panel/Stats/LevelLabel.modulate = Color.YELLOW
+    tween.tween_property($Panel/Stats/LevelLabel, "modulate", Color.WHITE, 0.5)
+    
+    show()
+    GameStateManager.change_state(GameStateManager.GameState.GAME_OVER)
+
+func _format_time(seconds: float) -> String:
+    var minutes = int(seconds) / 60
+    var secs = int(seconds) % 60
+    return "%d:%02d" % [minutes, secs]
+
+func _on_new_run():
+    hide()
+    RunSaveManager.start_new_run()
+    GameStateManager.change_state(GameStateManager.GameState.PLAYING)
+    get_tree().reload_current_scene()
+    # Note: Player continues with their current level/stats
+    # TODO Phase 7+: Return to hub world instead of reloading combat
+
+func _on_main_menu():
+    hide()
+    SceneTransition.transition_to("res://scenes/ui/MainMenu.tscn")
+    # TODO Phase 7+: Option to return to hub instead
+```
+
+func _format_time(seconds: float) -> String:
+    var minutes = int(seconds) / 60
+    var secs = int(seconds) % 60
+    return "%d:%02d" % [minutes, secs]
+
+func _on_new_run():
+    hide()
+    RunSaveManager.start_new_run()
+    GameStateManager.change_state(GameStateManager.GameState.PLAYING)
+    get_tree().reload_current_scene()
+    # Note: Player starts fresh at level 1, but total XP is preserved
+
+func _on_main_menu():
+    hide()
+    SceneTransition.transition_to("res://scenes/ui/MainMenu.tscn")
+```
+
+### Afternoon (2 hours): Update ESC Menu & Integration
+
+**Update `EscapeMenu.tscn`**:
+- Control (Full Rect, process_mode = WHEN_PAUSED)
+- Semi-transparent background
+- Panel (centered):
+  - "Paused" title
+  - VBoxContainer:
+    - Resume Button
+    - Save & Quit Button
+    - Abandon Run Button
+    - Settings Button
+- ConfirmationDialog for abandon
+
+**Update `EscapeMenu.gd`**:
+```gdscript
+extends Control
+
+@onready var abandon_dialog = $AbandonDialog
+
+func _ready():
+    process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+    hide()
+    
+    $Panel/Buttons/ResumeButton.pressed.connect(_on_resume)
+    $Panel/Buttons/SaveQuitButton.pressed.connect(_on_save_quit)
+    $Panel/Buttons/AbandonButton.pressed.connect(_on_abandon)
+    $Panel/Buttons/SettingsButton.pressed.connect(_on_settings)
+    
+    # Setup abandon dialog
+    abandon_dialog.dialog_text = "Abandon this run? You'll lose all progress but keep earned XP."
+    abandon_dialog.confirmed.connect(_confirm_abandon)
+    
+    # Listen for state changes
+    GameStateManager.state_changed.connect(_on_state_changed)
+
+func _on_state_changed(new_state: GameStateManager.GameState, old_state: GameStateManager.GameState):
+    if new_state == GameStateManager.GameState.PAUSED:
+        show()
+    else:
+        hide()
+
+func _on_resume():
+    GameStateManager.change_state(GameStateManager.GameState.PLAYING)
+
+func _on_save_quit():
+    if RunSaveManager.save_run():
+        SceneTransition.transition_to("res://scenes/ui/MainMenu.tscn")
+    else:
+        push_error("Failed to save game!")
+
+func _on_abandon():
+    abandon_dialog.popup_centered()
+
+func _confirm_abandon():
+    # Calculate current stats for rewards
+    if is_instance_valid(GameManager.player):
+        var stats = {
+            "wave": WaveManager.current_wave,
+            "kills": WaveManager.total_enemies_killed,
+            "time": Time.get_ticks_msec() / 1000.0 - RunSaveManager.current_run_start_time,
+            "player_data": {
+                "xp": GameManager.player.xp,
+                "level": GameManager.player.level,
+                "stat_points": GameManager.player.stat_points,
+                "stats": GameManager.player.stats
+            }
+        }
+        
+        # Save character progress before abandoning
+        MetaSaveManager.add_run_rewards(stats.wave, stats.kills, stats.time, stats.player_data)
+    
+    # Delete run and return to menu
+    RunSaveManager.delete_run()
+    SceneTransition.transition_to("res://scenes/ui/MainMenu.tscn")
+
+func _on_settings():
+    var settings_scene = preload("res://scenes/ui/SettingsMenu.tscn")
+    var settings = settings_scene.instantiate()
+    get_parent().add_child(settings)
+```
+
+**Update `Player.gd` die() function**:
+```gdscript
+func die():
+    if is_dead:
+        return
+    is_dead = true
+    
+    # Prepare stats for game over
+    var stats = {
+        "wave": WaveManager.current_wave,
+        "kills": WaveManager.total_enemies_killed,
+        "time": Time.get_ticks_msec() / 1000.0 - RunSaveManager.current_run_start_time,
+        "player_data": {
+            "xp": xp,
+            "level": level,
+            "stat_points": stat_points,
+            "stats": stats
+        }
+    }
+    
+    # Mark run for deletion (will be deleted after successful scene load)
+    RunSaveManager.mark_for_deletion()
+    
+    # Show game over
+    var game_over = get_node("/root/Main/UI/GameOverScreen")
+    if game_over:
+        game_over.show_game_over(stats)
+    else:
+        push_error("GameOverScreen not found!")
+    
+    # Disable player
+    visible = false
+    set_physics_process(false)
+    set_process(false)
+    collision_layer = 0
+    collision_mask = 0
+```
+
+**Add to Player.gd level_up() function**:
+```gdscript
+func level_up():
+    level += 1
+    stat_points += 3
+    xp_to_next_level = calculate_xp_for_next_level(level)
+    
+    # Increase base stats
+    max_hp += 10
+    max_mana += 5
+    hp = max_hp
+    mana = max_mana
+    
+    # Save progress immediately
+    MetaSaveManager.update_character_progress(level, xp, stat_points, stats)
+    
+    # Visual feedback
+    # ... existing level up effects ...
+
+func allocate_stat_point(stat_name: String):
+    if stat_points <= 0:
+        return
+        
+    stat_points -= 1
+    stats[stat_name] += 1
+    
+    # Apply stat effects
+    match stat_name:
+        "strength":
+            # Affects damage, etc.
+            pass
+        "intelligence":
+            # Affects spell power, mana
+            max_mana += 2
+            mana = min(mana + 2, max_mana)
+        "agility":
+            # Affects movement speed, dodge
+            pass
+    
+    # Save immediately
+    MetaSaveManager.update_character_progress(level, xp, stat_points, stats)
+    
+    update_ui()
+```
+
+**Update Main.gd to handle run loading**:
+```gdscript
+extends Node2D
+
+@onready var player = $Player
+@onready var ui = $UI
+
+func _ready():
+    # Ensure game state
+    GameStateManager.change_state(GameStateManager.GameState.PLAYING)
+    
+    # Check if we're continuing a run
+    var run_data = RunSaveManager.load_run()
+    if run_data.size() > 0:
+        if _load_run_state(run_data):
+            # Successfully loaded - now safe to delete
+            RunSaveManager.delete_run()
+        else:
+            # Load failed - try backup
+            push_error("Failed to load run, trying backup...")
+            if RunSaveManager.restore_from_backup():
+                run_data = RunSaveManager.load_run()
+                if _load_run_state(run_data):
+                    RunSaveManager.delete_run()
+                else:
+                    _start_fresh_run()
+            else:
+                _start_fresh_run()
+    else:
+        # New run
+        RunSaveManager.start_new_run()
+        _start_fresh_run()
+    
+    # Fade in
+    SceneTransition.fade_in()
+
+func _load_run_state(data: Dictionary) -> bool:
+    if not data.has("player") or not data.has("wave"):
+        push_error("Invalid save data")
+        return false
+    
+    try:
+        # Restore wave state
+        WaveManager.current_wave = data.wave
+        WaveManager.total_enemies_killed = data.kills
+        
+        # Note: xp_earned is tracked but player always starts at current XP
+        # from save (no additional XP added when loading)
+        
+        # Restore player state
+        var p = data.player
+        player.global_position = Vector2(p.position[0], p.position[1])
+        player.level = p.level
+        player.xp = p.xp
+        player.xp_to_next_level = p.xp_to_next_level
+        player.stat_points = p.stat_points
+        player.stats = p.stats
+        
+        # Restore HP/Mana (max values calculated from level)
+        player.max_hp = 100 + (p.level - 1) * 10
+        player.max_mana = 50 + (p.level - 1) * 5
+        player.hp = min(p.hp, player.max_hp)  # Clamp to current max
+        player.mana = min(p.mana, player.max_mana)
+        
+        # Update UI
+        player.update_ui()
+        
+        # Start appropriate wave
+        WaveManager.start_wave()
+        
+        return true
+    except:
+        push_error("Exception while loading save")
+        return false
+
+func _start_fresh_run():
+    # Initialize fresh game state
+    WaveManager.reset()
+    player.reset_to_defaults()
+    WaveManager.start_wave()
+
+func _input(event):
+    if event.is_action_pressed("escape"):
+        match GameStateManager.current_state:
+            GameStateManager.GameState.PLAYING:
+                if not player.is_dead:
+                    GameStateManager.change_state(GameStateManager.GameState.PAUSED)
+            GameStateManager.GameState.PAUSED:
+                GameStateManager.change_state(GameStateManager.GameState.PLAYING)
+```
+
+---
+
+## 📅 DAY 3: SETTINGS FRAMEWORK
+
+### Morning (2 hours): SettingsManager
+
+**Create `scripts/core/SettingsManager.gd`** (Autoload):
+```gdscript
+extends Node
+
+var config = ConfigFile.new()
+var settings_path = "user://settings.cfg"
+
+var default_settings = {
+    "graphics": {
+        "fullscreen": false,
+        "vsync": true
+    },
+    "audio": {
+        "master_volume": 0.8,
+        "sfx_volume": 0.8,
+        "music_volume": 0.6
+    },
+    "gameplay": {
+        "show_damage_numbers": true,
+        "auto_save_interval": 60.0  # seconds
+    }
+}
+
+var current_settings = {}
+
+func _ready():
+    load_settings()
+    apply_all_settings()
+
+func load_settings():
+    if config.load(settings_path) != OK:
+        # First time, use defaults
+        current_settings = default_settings.duplicate(true)
+        save_settings()
+    else:
+        # Load each category with validation
+        for category in default_settings:
+            current_settings[category] = {}
+            for key in default_settings[category]:
+                var default_value = default_settings[category][key]
+                var loaded_value = config.get_value(category, key, default_value)
+                current_settings[category][key] = _validate_setting(category, key, loaded_value)
+
+func _validate_setting(category: String, key: String, value):
+    match category:
+        "audio":
+            if key.ends_with("_volume"):
+                return clamp(value, 0.0, 1.0)
+        "gameplay":
+            if key == "auto_save_interval":
+                return max(30.0, value)  # Minimum 30 seconds
+    return value
+
+func save_settings() -> bool:
+    for category in current_settings:
+        for key in current_settings[category]:
+            config.set_value(category, key, current_settings[category][key])
+    
+    if config.save(settings_path) != OK:
+        push_error("Failed to save settings")
+        return false
+    return true
+
+func get_setting(category: String, key: String):
+    if current_settings.has(category) and current_settings[category].has(key):
+        return current_settings[category][key]
+    else:
+        push_error("Setting not found: %s.%s" % [category, key])
+        return null
+
+func set_setting(category: String, key: String, value):
+    if not current_settings.has(category):
+        push_error("Invalid category: " + category)
+        return
+        
+    current_settings[category][key] = _validate_setting(category, key, value)
+    save_settings()
+    _apply_setting(category, key, current_settings[category][key])
+
+func reset_to_defaults():
+    current_settings = default_settings.duplicate(true)
+    save_settings()
+    apply_all_settings()
+
+func apply_all_settings():
+    # Graphics
+    _apply_fullscreen(current_settings.graphics.fullscreen)
+    _apply_vsync(current_settings.graphics.vsync)
+    
+    # Audio
+    AudioServer.set_bus_volume_db(0, linear_to_db(current_settings.audio.master_volume))
+    # SFX and Music buses will be set up in Phase 6
+    
+    # Gameplay
+    _apply_damage_numbers(current_settings.gameplay.show_damage_numbers)
+
+func _apply_setting(category: String, key: String, value):
+    match category:
+        "graphics":
+            match key:
+                "fullscreen":
+                    _apply_fullscreen(value)
+                "vsync":
+                    _apply_vsync(value)
+        "audio":
+            match key:
+                "master_volume":
+                    AudioServer.set_bus_volume_db(0, linear_to_db(value))
+        "gameplay":
+            match key:
+                "show_damage_numbers":
+                    _apply_damage_numbers(value)
+
+func _apply_fullscreen(enabled: bool):
+    if enabled:
+        DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+    else:
+        DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+
+func _apply_vsync(enabled: bool):
+    if enabled:
+        DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED)
+    else:
+        DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+
+func _apply_damage_numbers(enabled: bool):
+    # This will be called when damage number system exists
+    if has_node("/root/Main"):
+        # TODO: Apply to damage number system
+        pass
+```
+
+### Afternoon (2 hours): Settings UI
+
+**Create `scenes/ui/SettingsMenu.tscn`**:
+- Control (Full Rect, process_mode = WHEN_PAUSED)
+- Semi-transparent background
+- Panel (centered, 600x400):
+  - HBoxContainer (header):
+    - "Settings" title
+    - Close button (X)
+  - TabContainer:
+    - Graphics Tab:
+      - Fullscreen CheckBox
+      - VSync CheckBox
+    - Audio Tab:
+      - Master Volume (Label + HSlider + Value Label)
+      - SFX Volume (Label + HSlider + Value Label)
+      - Music Volume (Label + HSlider + Value Label)
+    - Gameplay Tab:
+      - Show Damage Numbers CheckBox
+  - Bottom buttons (HBoxContainer):
+    - Reset to Defaults
+    - Apply (disabled until changes made)
+    - Back
+
+**Create `scripts/ui/SettingsMenu.gd`**:
+```gdscript
+extends Control
+
+@onready var fullscreen_check = $Panel/TabContainer/Graphics/FullscreenCheck
+@onready var vsync_check = $Panel/TabContainer/Graphics/VSyncCheck
+@onready var master_slider = $Panel/TabContainer/Audio/MasterVolume/Slider
+@onready var master_value = $Panel/TabContainer/Audio/MasterVolume/Value
+@onready var sfx_slider = $Panel/TabContainer/Audio/SFXVolume/Slider
+@onready var sfx_value = $Panel/TabContainer/Audio/SFXVolume/Value
+@onready var music_slider = $Panel/TabContainer/Audio/MusicVolume/Slider
+@onready var music_value = $Panel/TabContainer/Audio/MusicVolume/Value
+@onready var damage_check = $Panel/TabContainer/Gameplay/DamageCheck
+@onready var apply_button = $Panel/Buttons/ApplyButton
+
+var is_loading = false
+var has_changes = false
+var initial_settings = {}
+
+func _ready():
+    process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+    
+    # Connect signals
+    fullscreen_check.toggled.connect(_on_setting_changed)
+    vsync_check.toggled.connect(_on_setting_changed)
+    master_slider.value_changed.connect(_on_master_changed)
+    sfx_slider.value_changed.connect(_on_sfx_changed)
+    music_slider.value_changed.connect(_on_music_changed)
+    damage_check.toggled.connect(_on_setting_changed)
+    
+    $Panel/Header/CloseButton.pressed.connect(_on_back)
+    $Panel/Buttons/ResetButton.pressed.connect(_on_reset)
+    $Panel/Buttons/ApplyButton.pressed.connect(_on_apply)
+    $Panel/Buttons/BackButton.pressed.connect(_on_back)
+    
+    # Configure sliders
+    for slider in [master_slider, sfx_slider, music_slider]:
+        slider.min_value = 0.0
+        slider.max_value = 1.0
+        slider.step = 0.05
+    
+    # Load current settings
+    _load_current_settings()
+
+func _load_current_settings():
+    is_loading = true
+    
+    # Store initial values
+    initial_settings = {
+        "fullscreen": SettingsManager.get_setting("graphics", "fullscreen"),
+        "vsync": SettingsManager.get_setting("graphics", "vsync"),
+        "master_volume": SettingsManager.get_setting("audio", "master_volume"),
+        "sfx_volume": SettingsManager.get_setting("audio", "sfx_volume"),
+        "music_volume": SettingsManager.get_setting("audio", "music_volume"),
+        "show_damage_numbers": SettingsManager.get_setting("gameplay", "show_damage_numbers")
+    }
+    
+    # Apply to UI
+    fullscreen_check.button_pressed = initial_settings.fullscreen
+    vsync_check.button_pressed = initial_settings.vsync
+    master_slider.value = initial_settings.master_volume
+    sfx_slider.value = initial_settings.sfx_volume
+    music_slider.value = initial_settings.music_volume
+    damage_check.button_pressed = initial_settings.show_damage_numbers
+    
+    _update_volume_labels()
+    is_loading = false
+    has_changes = false
+    apply_button.disabled = true
+
+func _on_setting_changed(value):
+    if not is_loading:
+        _check_for_changes()
+
+func _on_master_changed(value: float):
+    master_value.text = str(int(value * 100)) + "%"
+    if not is_loading:
+        SettingsManager.set_setting("audio", "master_volume", value)
+        _check_for_changes()
+
+func _on_sfx_changed(value: float):
+    sfx_value.text = str(int(value * 100)) + "%"
+    if not is_loading:
+        _check_for_changes()
+
+func _on_music_changed(value: float):
+    music_value.text = str(int(value * 100)) + "%"
+    if not is_loading:
+        _check_for_changes()
+
+func _check_for_changes():
+    has_changes = (
+        fullscreen_check.button_pressed != initial_settings.fullscreen or
+        vsync_check.button_pressed != initial_settings.vsync or
+        abs(master_slider.value - initial_settings.master_volume) > 0.01 or
+        abs(sfx_slider.value - initial_settings.sfx_volume) > 0.01 or
+        abs(music_slider.value - initial_settings.music_volume) > 0.01 or
+        damage_check.button_pressed != initial_settings.show_damage_numbers
+    )
+    apply_button.disabled = not has_changes
+
+func _update_volume_labels():
+    master_value.text = str(int(master_slider.value * 100)) + "%"
+    sfx_value.text = str(int(sfx_slider.value * 100)) + "%"
+    music_value.text = str(int(music_slider.value * 100)) + "%"
+
+func _on_apply():
+    # Apply all settings
+    SettingsManager.set_setting("graphics", "fullscreen", fullscreen_check.button_pressed)
+    SettingsManager.set_setting("graphics", "vsync", vsync_check.button_pressed)
+    SettingsManager.set_setting("audio", "master_volume", master_slider.value)
+    SettingsManager.set_setting("audio", "sfx_volume", sfx_slider.value)
+    SettingsManager.set_setting("audio", "music_volume", music_slider.value)
+    SettingsManager.set_setting("gameplay", "show_damage_numbers", damage_check.button_pressed)
+    
+    # Update initial settings
+    _load_current_settings()
+
+func _on_reset():
+    var confirm = ConfirmationDialog.new()
+    confirm.dialog_text = "Reset all settings to defaults?"
+    confirm.confirmed.connect(_confirm_reset)
+    add_child(confirm)
+    confirm.popup_centered()
+
+func _confirm_reset():
+    SettingsManager.reset_to_defaults()
+    _load_current_settings()
+
+func _on_back():
+    if has_changes:
+        var confirm = ConfirmationDialog.new()
+        confirm.dialog_text = "Discard unsaved changes?"
+        confirm.confirmed.connect(queue_free)
+        add_child(confirm)
+        confirm.popup_centered()
+    else:
+        queue_free()
+```
+
+---
+
+## 📅 DAY 4: POLISH & INTEGRATION
+
+### Morning (2 hours): Scene Transitions
+
+**Create `scripts/ui/SceneTransition.gd`** (Autoload):
+```gdscript
+extends CanvasLayer
+
+var fade_rect: ColorRect
+
+func _ready():
+    # Create fade rect
+    fade_rect = ColorRect.new()
+    fade_rect.color = Color.BLACK
+    fade_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    fade_rect.modulate.a = 0.0
+    add_child(fade_rect)
+    
+    # Ensure on top
+    layer = 100
+
+func transition_to(scene_path: String, duration: float = 0.3):
+    var tween = create_tween()
+    tween.tween_property(fade_rect, "modulate:a", 1.0, duration)
+    tween.tween_callback(func(): get_tree().change_scene_to_file(scene_path))
+    tween.tween_property(fade_rect, "modulate:a", 0.0, duration)
+
+func fade_in(duration: float = 0.3):
+    var tween = create_tween()
+    fade_rect.modulate.a = 1.0
+    tween.tween_property(fade_rect, "modulate:a", 0.0, duration)
+
+func fade_out(duration: float = 0.3):
+    var tween = create_tween()
+    tween.tween_property(fade_rect, "modulate:a", 1.0, duration)
+
+func instant_black():
+    fade_rect.modulate.a = 1.0
+
+func instant_clear():
+    fade_rect.modulate.a = 0.0
+```
+
+### Afternoon (2 hours): Testing & Final Polish
+
+**Create Autosave Timer in Main.gd**:
+```gdscript
+var autosave_timer: Timer
+
+func _ready():
+    # ... existing code ...
+    
+    # Setup autosave
+    autosave_timer = Timer.new()
+    autosave_timer.wait_time = SettingsManager.get_setting("gameplay", "auto_save_interval")
+    autosave_timer.timeout.connect(_autosave)
+    add_child(autosave_timer)
+    autosave_timer.start()
+
+func _autosave():
+    if GameStateManager.current_state == GameStateManager.GameState.PLAYING:
+        if is_instance_valid(player) and not player.is_dead:
+            RunSaveManager.save_run()
+            print("Autosaved")
+```
+
+**Update Player.gd for better state handling**:
+```gdscript
+func reset_to_defaults():
+    hp = 100
+    max_hp = 100
+    mana = 50
+    max_mana = 50
+    
+    # Load persistent character progress
+    level = MetaSaveManager.meta_data.get("character_level", 1)
+    xp = MetaSaveManager.meta_data.total_xp
+    xp_to_next_level = calculate_xp_for_next_level(level)
+    stat_points = MetaSaveManager.meta_data.get("unspent_stat_points", 0)
+    
+    # Load saved stats or use defaults
+    stats = MetaSaveManager.meta_data.get("character_stats", {
+        "strength": 10,
+        "intelligence": 10,
+        "agility": 10
+    })
+    
+    # Apply level-based HP/Mana bonuses
+    max_hp = 100 + (level - 1) * 10  # +10 HP per level
+    max_mana = 50 + (level - 1) * 5   # +5 Mana per level
+    hp = max_hp
+    mana = max_mana
+    
+    is_dead = false
+    visible = true
+    set_physics_process(true)
+    set_process(true)
+    collision_layer = 1
+    collision_mask = 1
+    update_ui()
+
+func calculate_xp_for_next_level(current_level: int) -> int:
+    # Standard RPG formula: 100 * level
+    return 100 * (current_level + 1)
+```
+
+**Project Settings Updates**:
+1. Set main scene: `res://scenes/ui/MainMenu.tscn`
+2. Verify autoload order (as listed at top)
+3. Add input map if missing:
+   - "escape" = Esc key
+
+**Testing Checklist**:
+- [ ] New game creates fresh run
+- [ ] Continue loads suspended run correctly
+- [ ] Run save deleted only after successful load
+- [ ] Backup system works if main save corrupted
+- [ ] Death shows stats and gives XP
+- [ ] Save & Quit preserves run state
+- [ ] Abandon Run gives XP but deletes save
+- [ ] Settings persist between sessions
+- [ ] Fullscreen toggle works
+- [ ] VSync toggle works
+- [ ] Volume sliders update audio
+- [ ] Damage numbers toggle ready for system
+- [ ] All transitions are smooth
+- [ ] ESC behavior correct in all states
+- [ ] Autosave works during gameplay
+- [ ] Settings validation prevents bad values
+- [ ] Error handling prevents crashes
+
+**Final Polish Tasks**:
+1. Add subtle UI animations (button hovers, panel slides)
+2. Ensure consistent UI theming
+3. Add keyboard navigation support
+4. Test edge cases (corrupt saves, missing files)
+5. Profile performance of save/load operations
+
+---
+
+## ✅ PHASE 4 DELIVERABLES
+
+1. **Robust Save System**:
+   - MetaSaveManager with version migration
+   - 3 save slots with compression
+   - RunSaveManager with backup support
+   - Safe deletion timing
+   - Error handling throughout
+
+2. **Complete Game Flow**:
+   - Slot selection → Main Menu → Game → Pause → Death → Retry
+   - Save & Quit functionality
+   - Abandon Run with character progress saved
+   - Smooth state transitions
+   - **Hub-ready architecture** for Phase 7+
+
+3. **Settings Framework**:
+   - Persistent settings with validation
+   - Fullscreen and VSync working
+   - Audio UI ready for Phase 6
+   - Apply/discard pattern
+
+4. **Professional Polish**:
+   - Scene transitions
+   - Autosave system
+   - Error recovery
+   - Consistent UI/UX
+
+5. **Persistent Character System**:
+   - Character level persists between runs
+   - XP accumulates permanently
+   - Stats and stat points carry over
+   - Each run starts at wave 1, but with your leveled character
+   - Death only resets wave progress, not character progress
+
+## ⏱️ TIME INVESTMENT
+- Day 1: Save system + States (4 hours)
+- Day 2: Game flow + Death (4 hours)
+- Day 3: Settings framework (4 hours)
+- Day 4: Polish + Testing (4 hours)
+
+**Total: 16 hours**
+
+## 🚀 READY FOR PHASE 5
+With professional game structure complete and robust error handling in place, Phase 5 can focus purely on enhanced combat mechanics and progression systems.

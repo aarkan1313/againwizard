@@ -1,0 +1,89 @@
+# Damage Numbers & XP System Fix Report
+
+## Problem Summary
+
+### Damage Numbers Issue
+**Problem**: Damage numbers stayed on screen indefinitely instead of disappearing after intended duration
+
+### XP System Issue  
+**Problem**: No experience points awarded when enemies died
+
+---
+
+## Root Causes
+
+### Damage Numbers
+- **Multiple Creation Sources**: Both Enemy.gd and SpellProjectile.gd were creating damage numbers
+- **Timing Conflicts**: Simultaneous creation caused cleanup interference
+- **Insufficient Cleanup**: No failsafe mechanism for guaranteed removal
+
+### XP System
+- **Wrong Signal Syntax**: Using incorrect GameEvents emission method
+- **Signal Connection Failure**: `GameEvents.enemy_died.emit()` not working
+
+---
+
+## Solutions Applied
+
+### Damage Numbers Fix
+**Location**: `scripts/ui/DamageNumber.gd`
+
+```gdscript
+# Enhanced cleanup with failsafe timer
+var cleanup_delay = max(display_duration, movement_duration)
+tween.tween_callback(_cleanup_and_destroy).set_delay(cleanup_delay)
+
+# Failsafe timer for guaranteed cleanup
+var failsafe_timer = Timer.new()
+failsafe_timer.wait_time = cleanup_delay + 0.8
+failsafe_timer.timeout.connect(_cleanup_and_destroy)
+```
+
+**Key Changes**:
+- **Single Source**: Only Enemy.gd creates damage numbers
+- **Extended Duration**: 0.6s → 1.02s for better readability  
+- **Failsafe Timer**: Guarantees cleanup even if tween fails
+- **Cleanup Prevention**: `is_cleaning_up` flag prevents duplicate cleanup
+
+### XP System Fix
+**Location**: `scripts/Enemy.gd`
+
+```gdscript
+# Fixed XP emission in death handler
+func _on_died():
+    if GameEvents:
+        GameEvents.emit_signal("enemy_died", enemy_type, experience_value)
+```
+
+**Key Changes**:
+- **Correct Syntax**: `emit_signal("enemy_died", ...)` instead of `enemy_died.emit()`
+- **Parameter Order**: enemy_type, experience_value
+- **Validation**: Check GameEvents exists before calling
+
+---
+
+## Testing Status
+
+### ✅ Damage Numbers
+- Numbers appear on damage
+- Disappear after 1.02s duration
+- No lingering numbers on screen
+- Failsafe cleanup working
+
+### ✅ XP System  
+- Enemy kills award experience points
+- Correct XP values (10 for goblins, etc.)
+- GameEvents signal properly emitted
+- No errors in signal connection
+
+---
+
+## Quick Reference for New Chat
+
+**Damage Number Problem**: Numbers not disappearing  
+**Fix**: Single source + failsafe timer cleanup
+
+**XP Problem**: No XP on enemy kills  
+**Fix**: Use `emit_signal("enemy_died", type, xp)` syntax
+
+**Both systems now working correctly in current project files.**

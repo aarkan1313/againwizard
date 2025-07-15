@@ -1,0 +1,316 @@
+# Enemy Attack System 2.0 - Simplified Update Guide
+
+## Overview
+This guide provides instructions for updating your existing enemy system to support independent attack timing with clear visual telegraphs and integrated abilities.
+
+**Note: This is an UPDATE guide - integrate these features into your existing Enemy.gd rather than replacing it.**
+
+## Core Updates to Enemy.gd
+
+### 1. Add Attack Properties
+
+```gdscript
+# Add these to your existing Enemy class
+@export_group("Attack Configuration")
+@export var has_basic_attack: bool = true  # Some enemies only use abilities
+@export var attack_range: float = 50.0
+@export var attack_damage: float = 10.0
+@export var attack_cooldown: float = 2.0
+@export var telegraph_duration: float = 0.5
+
+# Attack state
+var attack_cooldown_timer: float = 0.0
+var is_attacking: bool = false
+var attack_target: Node2D = null
+
+# Visual references
+var original_modulate: Color
+var original_scale: Vector2
+```
+
+### 2. Setup Attack Parameters
+
+```gdscript
+func setup_attack_parameters():
+    match enemy_type:
+        "goblin":
+            has_basic_attack = true
+            attack_range = 40.0
+            attack_damage = 8.0
+            attack_cooldown = 1.2
+            telegraph_duration = 0.3
+            
+        "orc":
+            has_basic_attack = true
+            attack_range = 60.0
+            attack_damage = 15.0
+            attack_cooldown = 2.5
+            telegraph_duration = 0.6
+            
+        "skeleton":
+            has_basic_attack = false  # Uses abilities only
+            attack_range = 100.0
+            attack_cooldown = 2.0
+            
+        "wizard":
+            has_basic_attack = false  # Uses abilities only
+            attack_range = 150.0
+            attack_cooldown = 3.0
+            
+        "golem":
+            has_basic_attack = true
+            attack_range = 70.0
+            attack_damage = 25.0
+            attack_cooldown = 4.0
+            telegraph_duration = 1.0
+```
+
+### 3. Update Physics Process
+
+```gdscript
+# Add to your existing _physics_process
+func _physics_process(delta):
+    # ... existing movement code ...
+    
+    # Update attack cooldown
+    if attack_cooldown_timer > 0:
+        attack_cooldown_timer -= delta
+    
+    # Check for attacks when not attacking
+    if not is_attacking and attack_cooldown_timer <= 0:
+        check_attack_opportunity()
+```
+
+### 4. Attack System Core
+
+```gdscript
+func check_attack_opportunity():
+    var player = get_player()
+    if not player:
+        return
+    
+    var distance = global_position.distance_to(player.global_position)
+    
+    # For ability-only enemies
+    if not has_basic_attack:
+        if distance <= attack_range and ability_system:
+            var ability = ability_system.get_usable_ability(distance)
+            if ability:
+                start_ability_attack(ability)
+        return
+    
+    # Check abilities first
+    if ability_system:
+        var ability = ability_system.get_usable_ability(distance)
+        if ability:
+            start_ability_attack(ability)
+            return
+    
+    # Basic attack fallback
+    if distance <= attack_range:
+        start_basic_attack()
+
+func start_ability_attack(ability):
+    is_attacking = true
+    velocity = Vector2.ZERO
+    
+    ability_system.use_ability(ability)
+    attack_cooldown_timer = attack_cooldown
+    
+    var duration = ability.cast_time if ability.has("cast_time") else 1.0
+    await get_tree().create_timer(duration).timeout
+    is_attacking = false
+
+func start_basic_attack():
+    if not has_basic_attack or is_attacking:
+        return
+    
+    is_attacking = true
+    attack_target = get_player()
+    velocity = Vector2.ZERO
+    
+    # Telegraph
+    show_attack_telegraph()
+    await get_tree().create_timer(telegraph_duration).timeout
+    
+    # Attack
+    if is_attacking and is_instance_valid(attack_target):
+        execute_attack()
+    
+    # Recovery
+    await get_tree().create_timer(0.2).timeout
+    end_attack()
+
+func execute_attack():
+    create_attack_animation()
+    
+    # Check hit
+    if attack_target and global_position.distance_to(attack_target.global_position) <= attack_range * 1.2:
+        deal_damage()
+
+func deal_damage():
+    if not attack_target or not attack_target.has_method("take_damage"):
+        return
+    
+    var final_damage = calculate_final_damage()
+    if attack_target.take_damage(final_damage, self):
+        create_hit_effect(attack_target.global_position)
+
+func calculate_final_damage() -> float:
+    var damage = attack_damage
+    
+    # Apply wave scaling if available
+    if has_method("get_wave_damage_multiplier"):
+        damage *= get_wave_damage_multiplier()
+    
+    return damage
+
+func end_attack():
+    is_attacking = false
+    attack_cooldown_timer = attack_cooldown
+    attack_target = null
+    reset_visual_state()
+```
+
+## Procedural Animations
+
+### Telegraph Effects
+
+```gdscript
+func show_attack_telegraph():
+    # Color pulse
+    var tween = create_tween()
+    tween.set_loops(int(telegraph_duration / 0.3))
+    tween.tween_property(sprite, "modulate", Color.YELLOW, 0.15)
+    tween.tween_property(sprite, "modulate", Color.WHITE, 0.15)
+    
+    # Scale breathing
+    var scale_tween = create_tween()
+    scale_tween.set_loops(int(telegraph_duration / 0.4))
+    scale_tween.tween_property(self, "scale", original_scale * 1.1, 0.2)
+    scale_tween.tween_property(self, "scale", original_scale * 0.95, 0.2)
+```
+
+### Attack Animations
+
+```gdscript
+func create_attack_animation():
+    sprite.modulate = Color.RED
+    
+    var tween = create_tween()
+    match enemy_type:
+        "goblin":
+            # Quick slash
+            tween.tween_property(self, "scale:x", original_scale.x * 1.3, 0.05)
+            tween.tween_property(self, "scale:x", original_scale.x, 0.1)
+        "orc":
+            # Heavy slam
+            tween.tween_property(self, "scale", original_scale * 1.4, 0.1)
+            tween.tween_property(self, "scale", original_scale * 0.8, 0.05)
+            tween.tween_property(self, "scale", original_scale, 0.1)
+```
+
+### Hit Effects
+
+```gdscript
+func create_hit_effect(impact_pos: Vector2):
+    # Particle burst
+    for i in range(8):
+        create_impact_particle(impact_pos, i * (TAU / 8))
+
+func create_impact_particle(pos: Vector2, angle: float):
+    var particle = ColorRect.new()
+    particle.size = Vector2(4, 4)
+    particle.modulate = Color.ORANGE
+    particle.position = pos
+    get_tree().current_scene.add_child(particle)
+    
+    var direction = Vector2.from_angle(angle)
+    var distance = randf_range(20, 60)
+    
+    var tween = create_tween()
+    tween.set_parallel(true)
+    tween.tween_property(particle, "position", pos + direction * distance, 0.4)
+    tween.tween_property(particle, "modulate:a", 0.0, 0.4)
+    tween.tween_callback(particle.queue_free)
+
+func reset_visual_state():
+    var tween = create_tween()
+    tween.set_parallel(true)
+    tween.tween_property(sprite, "modulate", original_modulate, 0.3)
+    tween.tween_property(self, "scale", original_scale, 0.3)
+```
+
+## Player Updates
+
+```gdscript
+# Add to Player.gd
+var invulnerability_duration: float = 0.5
+var invuln_timer: float = 0.0
+
+func _physics_process(delta):
+    # Update invulnerability
+    if invuln_timer > 0:
+        invuln_timer -= delta
+        modulate.a = abs(sin(invuln_timer * 15)) * 0.5 + 0.5
+    else:
+        modulate.a = 1.0
+
+func take_damage(amount: float, source: Node = null) -> bool:
+    if invuln_timer > 0:
+        return false
+    
+    health_component.current_health -= amount
+    invuln_timer = invulnerability_duration
+    
+    # Visual feedback
+    show_damage_feedback(amount)
+    
+    # Knockback
+    if source:
+        var knockback_dir = (global_position - source.global_position).normalized()
+        velocity += knockback_dir * 200
+    
+    return true
+```
+
+## Future Systems (Commented)
+
+```gdscript
+# Damage Types (uncomment when ready)
+# enum DamageType { PHYSICAL, MAGICAL, FIRE, ICE }
+# func get_damage_type() -> DamageType:
+#     match enemy_type:
+#         "wizard": return DamageType.MAGICAL
+#         _: return DamageType.PHYSICAL
+
+# Audio (uncomment when implemented)
+# @export var telegraph_sound: AudioStream
+# @export var attack_sound: AudioStream
+# func play_sound(stream: AudioStream):
+#     $AudioStreamPlayer2D.stream = stream
+#     $AudioStreamPlayer2D.play()
+```
+
+## Testing
+
+1. **Debug Visualization**:
+```gdscript
+func _draw():
+    if OS.is_debug_build():
+        draw_arc(Vector2.ZERO, attack_range, 0, TAU, 32, Color(1, 0, 0, 0.3), 2.0)
+```
+
+2. **Test Each Enemy Type**:
+- Goblin: Quick attacks with color flash
+- Orc: Heavy slam with scale animation
+- Skeleton: Should only use abilities
+- Wizard: Should only use abilities  
+- Golem: Slow, powerful attacks
+
+3. **Verify**:
+- [ ] Enemies attack independently
+- [ ] Clear telegraph warnings
+- [ ] Player invulnerability works
+- [ ] Ability-only enemies don't use basic attacks
+- [ ] Procedural animations look good
