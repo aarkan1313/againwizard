@@ -30,15 +30,15 @@ const CHUNK_SIZE = 1024
 
 **Changes:**
 ```gdscript
-# Change from 7x7 grid (49 chunks) to 6x6 grid (36 chunks)
-const ACTIVE_RADIUS = 3  # Current: 7x7 grid
+# Change from 11x11 grid (121 chunks) to 9x9 grid (81 chunks)
+const ACTIVE_RADIUS = 5  # Current: 11x11 grid
 # To:
-const ACTIVE_RADIUS = 2  # New: 6x6 grid = 36 chunks
+const ACTIVE_RADIUS = 4  # New: 9x9 grid = 81 chunks
 
-# Update preload count for 4x4 initial grid
-const PRELOAD_COUNT = 25  # Current: 5x5 grid
+# Update preload count for 8x8 initial grid
+const PRELOAD_COUNT = 81  # Current: 9x9 grid
 # To:
-const PRELOAD_COUNT = 16  # New: 4x4 grid = 16 chunks
+const PRELOAD_COUNT = 64  # New: 8x8 grid = 64 chunks
 ```
 
 ### **Step 3: Update Grid Calculations**
@@ -50,7 +50,7 @@ const PRELOAD_COUNT = 16  # New: 4x4 grid = 16 chunks
 **Update grid size calculations:**
 ```gdscript
 # Find all functions that use ACTIVE_RADIUS
-# Verify they work correctly with the new 6x6 grid
+# Verify they work correctly with the new 9x9 grid
 # Test edge cases for chunk loading/unloading
 ```
 
@@ -68,8 +68,9 @@ const PRELOAD_COUNT = 16  # New: 4x4 grid = 16 chunks
 
 ### **Performance Improvements:**
 - **Fewer chunk crossings**: 4x less frequent boundary crossings
-- **Reduced chunk management**: 36 chunks vs 49 chunks (26% reduction)
+- **Reduced chunk management**: 81 chunks vs 121 chunks (33% reduction)
 - **Better visual consistency**: Larger visual areas per chunk
+- **Improved coverage**: 67% more area covered with fewer chunks
 
 ### **Potential Issues:**
 - **Higher generation time**: Each chunk is 16x larger (256²→1024²)
@@ -81,11 +82,11 @@ const PRELOAD_COUNT = 16  # New: 4x4 grid = 16 chunks
 ## Testing Checklist
 
 - [ ] Game starts without crashes
-- [ ] Initial 4x4 grid loads properly
+- [ ] Initial 8x8 grid loads properly (64 chunks)
 - [ ] Movement triggers correct chunk loading/unloading
 - [ ] Performance remains stable at 60 FPS
 - [ ] Memory usage stays within reasonable limits
-- [ ] Debug UI shows correct chunk counts (36 max)
+- [ ] Debug UI shows correct chunk counts (81 max active)
 - [ ] All biome types still visible with larger chunks
 
 ---
@@ -93,10 +94,10 @@ const PRELOAD_COUNT = 16  # New: 4x4 grid = 16 chunks
 ## Rollback Plan
 
 If performance issues occur:
-1. Revert `CHUNK_SIZE` back to 256
-2. Revert `ACTIVE_RADIUS` back to 3
-3. Revert `PRELOAD_COUNT` back to 25
-4. Consider intermediate size (512px) as compromise
+1. Revert `CHUNK_SIZE` back to 512
+2. Revert `ACTIVE_RADIUS` back to 5
+3. Revert `PRELOAD_COUNT` back to 81
+4. Consider intermediate size (768px) as compromise
 
 ---
 
@@ -105,19 +106,19 @@ If performance issues occur:
 ### **UnifiedWorldManager.gd Changes:**
 ```gdscript
 # Line ~10: Update chunk size
-const CHUNK_SIZE = 1024  # Was 256
+const CHUNK_SIZE = 1024  # Was 512
 
-# Line ~11: Update grid size
-const ACTIVE_RADIUS = 2  # Was 3 (6x6 instead of 7x7)
+# Line ~11: Update grid size  
+const ACTIVE_RADIUS = 4  # Was 5 (9x9 instead of 11x11)
 
 # Line ~12: Update preload count
-const PRELOAD_COUNT = 16  # Was 25 (4x4 instead of 5x5)
+const PRELOAD_COUNT = 64  # Was 81 (8x8 instead of 9x9)
 ```
 
 ### **SimpleChunkRenderer.gd Changes:**
 ```gdscript
 # Line ~10: Update chunk size to match
-const CHUNK_SIZE = 1024  # Was 256
+const CHUNK_SIZE = 1024  # Was 512
 ```
 
 ---
@@ -125,10 +126,10 @@ const CHUNK_SIZE = 1024  # Was 256
 ## Performance Targets
 
 ### **Acceptable Performance:**
-- **Chunk generation**: <10ms per chunk (was <2ms for 256px)
-- **Memory usage**: <300MB total (was <100MB)
-- **FPS**: Stable 60 FPS with 36 active chunks
-- **Loading time**: <2 seconds for initial 4x4 grid
+- **Chunk generation**: <15ms per chunk (was <5ms for 512px)
+- **Memory usage**: <400MB total (was <200MB)
+- **FPS**: Stable 60 FPS with 81 active chunks
+- **Loading time**: <5 seconds for initial 8x8 grid
 
 ### **If Performance Issues:**
 - Consider 512px chunks as intermediate step
