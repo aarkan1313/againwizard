@@ -148,12 +148,15 @@ func set_particle_multiplier(value: float):
 **Location**: `res://scripts/core/save/SaveManager.gd`  
 **Purpose**: Coordinate all save/load operations
 
-**Integration Pattern**: Orchestrates MetaSaveManager and RunSaveManager for layered persistence.
+**Integration Pattern**: Originally orchestrated MetaSaveManager and RunSaveManager - NOW handles all persistence directly since those systems are deprecated.
 
-### MetaSaveManager.gd - Persistent Progression
+### MetaSaveManager.gd - Persistent Progression (DEPRECATED SYSTEM)
+
+⚠️ **CRITICAL STATUS: SYSTEM DISABLED**
 
 **Location**: `res://scripts/core/MetaSaveManager.gd`  
-**Purpose**: Meta-progression and achievements across all runs
+**Status**: `const SYSTEM_DISABLED = true` - All methods return early  
+**Purpose**: Originally meta-progression and achievements - NOW REPLACED by unified SaveManager
 
 ```gdscript
 extends Node
@@ -172,10 +175,13 @@ var meta_data: Dictionary = {
 }
 ```
 
-### RunSaveManager.gd - Session Data
+### RunSaveManager.gd - Session Data (DEPRECATED SYSTEM)
+
+⚠️ **CRITICAL STATUS: SYSTEM DISABLED**
 
 **Location**: `res://scripts/core/RunSaveManager.gd`  
-**Purpose**: Current session-specific save data
+**Status**: `const SYSTEM_DISABLED = true` - All methods return early  
+**Purpose**: Originally session-specific save data - NOW INTEGRATED into unified SaveManager
 
 ```gdscript
 extends Node

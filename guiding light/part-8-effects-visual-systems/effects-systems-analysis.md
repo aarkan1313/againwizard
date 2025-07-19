@@ -2,7 +2,17 @@
 
 ## Overview
 
-Based on my comprehensive analysis of the FFS Wizard RPG codebase, this document details all visual effects, particle systems, and visual feedback mechanisms. The game implements a sophisticated effects architecture with both enabled and intentionally disabled systems.
+⚠️ **CRITICAL IMPLEMENTATION GAPS - July 19, 2025**
+
+## ACTUAL SYSTEM STATE: MIXED FUNCTIONALITY WITH UNUSED COMPLEXITY
+
+**Reality**: Multiple sophisticated effect systems exist but remain unused. The game defaults to simpler implementations while ignoring advanced features.
+
+### 📋 **ACTUAL STATUS:**
+- ✅ **Basic attack indicators work** - SimpleAttackIndicators functional via EnemyAbilities  
+- ❌ **Advanced indicators unused** - EnhancedAttackIndicators exists but ignored
+- ❌ **Many effects disabled** - Complex systems written but not integrated
+- **Pattern**: Sophisticated code exists but simpler fallbacks are used in practice
 
 ---
 
@@ -12,15 +22,15 @@ Based on my comprehensive analysis of the FFS Wizard RPG codebase, this document
 **Location**: `scripts/effects/`
 
 #### Available Effect Scripts
-- **EnhancedAttackIndicators.gd** - Sophisticated attack warning system with 6 indicator types and procedural generation
-- **SimpleAttackIndicators.gd** - Basic attack indicators 
+- **EnhancedAttackIndicators.gd** - Sophisticated attack warning system with 6 indicator types (EXISTS BUT UNUSED)
+- **SimpleAttackIndicators.gd** - Basic attack indicators (ACTUALLY USED - EnemyAbilities uses SimpleAttackIndicatorsFixed) 
 - **CircleFillDrawer.gd** - Circle drawing for AOE indicators (DISABLED)
 - **TelegraphRingDrawer.gd** - Attack telegraph rings (DISABLED)
 - **ShockwaveDrawer.gd** - Shockwave visual effects (DISABLED)
 - **ConeDrawer.gd** - Cone-shaped attack indicators
 - **TargetReticleDrawer.gd** - Targeting reticle system
 
-**Note**: ImpactEffect.gd referenced in documentation but not found in actual codebase at specified location.
+**Correction**: ImpactEffect.gd exists at `/scripts/effects/ImpactEffect.gd` - previous documentation error.
 
 ### System Status Analysis
 

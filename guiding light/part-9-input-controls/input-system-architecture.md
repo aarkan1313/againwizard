@@ -32,7 +32,7 @@ graph TD
 
 ### Project Input Map Configuration
 **Location**: `/godot/Game10/project.godot` input map section
-**Total Actions**: 15 defined input actions (verified)
+**Total Actions**: 24 defined input actions (corrected count - previously understated)
 
 #### Movement Actions (Actual Implementation)
 ```ini

@@ -29,7 +29,9 @@ Each component has a focused, well-defined responsibility:
 - **PlayerVisuals**: Visual effects and feedback only
 - **PlayerStatSheet**: Character progression and stat management only
 
-### 3. Dependency Injection Pattern
+### 3. Dependency Injection Pattern (INCOMPLETE IMPLEMENTATION)
+
+**Status**: Partial implementation with significant gaps - many components still rely on auto-discovery and scene tree traversal rather than proper dependency injection
 
 Components receive their dependencies through controlled injection rather than finding them themselves:
 
@@ -247,12 +249,16 @@ func get_pooled_afterimage() -> Sprite2D:
         return new_afterimage
 ```
 
-### 2. Object Pooling
+### 2. Object Pooling (LARGELY FAILED IMPLEMENTATION)
 
-Frequently created objects are pooled for performance:
+**Status**: Extensive pooling infrastructure exists but is systematically bypassed. Only afterimage pooling actually functions.
+
+**Major Gap**: EnemyPool and ProjectilePool have complete implementations but EnemySpawner and SpellComponent ignore them entirely, causing significant performance issues and memory waste.
+
+**Working**: Afterimage pooling in PlayerVisuals:
 
 ```gdscript
-# In PlayerVisuals.gd
+# In PlayerVisuals.gd - ACTUALLY USED
 func create_pooled_afterimage(position: Vector2, player_sprite: Sprite2D):
     var afterimage = get_pooled_afterimage()
     if not afterimage:
@@ -263,6 +269,8 @@ func create_pooled_afterimage(position: Vector2, player_sprite: Sprite2D):
     afterimage.global_position = position
     afterimage.modulate = Color(0.5, 0.5, 1, 0.5)
 ```
+
+**Not Working**: Enemy and Projectile pools exist but are never used - EnemySpawner and SpellComponent still use direct instantiation.
 
 ### 3. Caching Optimization
 

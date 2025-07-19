@@ -19,7 +19,7 @@ The FFS Wizard RPG attempts a **hybrid architecture** combining multiple design 
 
 1. **Event-Driven Architecture** - Basic GameEvents singleton exists but has integration issues
 2. **Singleton Coordination Pattern** - Multiple autoloads exist but exact count and functionality varies
-3. **Component-Based Design** - Working for player, broken for enemies due to incomplete refactoring
+3. **Component-Based Design** - Partial success: strong player implementation, incomplete dependency injection patterns
 4. **Phase-Based Development** - Legacy systems conflict with newer implementations
 
 ## Core Architectural Principles
@@ -200,11 +200,13 @@ assets/
 
 ### Memory Management Strategies
 
-#### 1. Object Pooling (Verified Implementation)
-- **Enemy Pool**: `/scripts/pools/EnemyPool.gd` - Sophisticated enemy instance reuse
-- **Projectile Pool**: `/scripts/pools/ProjectilePool.gd` - Spell effect optimization
-- **General Object Pool**: `/scripts/pools/ObjectPool.gd` - Generic pooling framework
-- **Hit/Miss Tracking**: Pool efficiency monitoring for optimization
+#### 1. Object Pooling (ESSENTIALLY NON-FUNCTIONAL - Appears Implemented But Isn't Used)
+- ❌ **Enemy Pool**: `/scripts/pools/EnemyPool.gd` - Complete sophisticated implementation exists but EnemySpawner completely ignores it and uses direct instantiation
+- ❌ **Projectile Pool**: `/scripts/pools/ProjectilePool.gd` - Advanced pooling system with cleanup and recycling but SpellComponent bypasses it entirely
+- ❌ **General Object Pool**: `/scripts/pools/ObjectPool.gd` - Generic pooling framework with proper lifecycle management but zero integration points
+- ✅ **Afterimage Pool**: Only actually functional pool - simple implementation in PlayerVisuals for visual effects
+- **User Reality**: Despite extensive pooling infrastructure, the game experiences performance issues from constant object instantiation/destruction that pooling was meant to solve
+- **Development Waste**: Hundreds of lines of sophisticated pooling code written but systematically ignored - classic over-engineering with zero practical benefit
 
 #### 2. Resource Preloading
 - Critical assets loaded at game start

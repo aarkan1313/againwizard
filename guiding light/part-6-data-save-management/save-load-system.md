@@ -12,8 +12,9 @@
 - ✅ **Multi-slot saves work** - 5 slots with metadata
 - ✅ **Milestone system sophisticated** - Full implementation with stat bonuses
 - ✅ **Auto-save functional** - Timer-based with tracking
-- ❌ **"Atomic operations" overstated** - Basic save/load, not true transactions
-- ❌ **"Rollback mechanisms" basic** - Simple backup, not sophisticated rollback
+- ⚠️ **"Atomic operations" oversold** - Simple temp file workflow, not database-style atomicity
+- ⚠️ **"Rollback mechanisms" basic** - Elementary backup restoration, not sophisticated transaction rollback
+- **Reality**: Marketing language overstates what is essentially standard file save practices
 
 ---
 

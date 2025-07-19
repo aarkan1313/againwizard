@@ -1,614 +1,274 @@
 # Combat Mechanics Analysis
 
-⚠️ **CRITICAL STATUS UPDATE - July 19, 2025**
+🚨 **CRITICAL STATUS UPDATE - July 19, 2025**
 
-## ACTUAL SYSTEM STATE: BROKEN/INCOMPLETE
+## ACTUAL SYSTEM STATE: BROKEN MIXED-PARADIGM COMBAT
 
-**This documentation describes aspirational architecture that is NOT currently functional.**
+**REALITY**: The combat system is fundamentally broken due to incomplete refactoring from legacy contact damage to intended abilities-only system.
 
-### ❌ **CRITICAL REALITY CHECK:**
-- **NOT abilities-only** - multiple conflicting combat systems coexist
-- **NOT 360-degree combat** - collision offsets break omnidirectional attacks
-- **NOT sophisticated damage types** - basic damage system only
-- **NOT advanced visual indicators** - most attack telegraphs disabled/broken
-- **NOT performance optimized** - claimed optimizations not fully implemented
-
-### 🔧 **ACTUAL CURRENT STATE:**
-The combat system has basic spell-to-enemy damage working, but enemy combat is broken due to incomplete refactoring. Most "sophisticated" features described below are aspirational goals, not current implementation.
+### ❌ **CRITICAL ISSUES:**
+- **Two conflicting combat systems coexist** - old contact damage + new abilities system
+- **Abilities-only vision not implemented** - sophisticated combat remains aspirational
+- **Contact damage still functional** - contradicts design goals
+- **Attack indicators mostly broken** - visual feedback system incomplete
+- **Player dodge collision issues** - teleport system has edge cases
 
 ---
 
-## Overview (INTENDED DESIGN - NOT CURRENT REALITY)
+## What Actually Works (Limited Functionality)
 
-The FFS Wizard RPG is intended to implement a sophisticated combat system built around an **abilities-only architecture**, but this system is currently broken and incomplete.
+### ✅ Basic Player Spell Casting
+**Location**: SpellComponent.gd  
+**Status**: Functional but basic
 
-## Core Combat Philosophy
+```gdscript
+# WORKING: Basic spell projectiles
+func cast_spell(spell_index: int) -> bool:
+    # Mana consumption works
+    # Projectile creation works  
+    # Basic damage application works
+```
 
-### Abilities-Only Combat System
+**Working Features**:
+- ✅ Spell casting with mana consumption
+- ✅ Projectile creation and movement
+- ✅ Basic damage to enemies on hit
+- ✅ Spell cooldowns and UI feedback
 
-**Design Principles**:
-- **No Contact Damage**: All damage comes from executed abilities with visual warnings
-- **Telegraphed Attacks**: Every ability has clear visual indicators before execution
-- **360-Degree Combat**: Enemies can attack in any direction regardless of facing
-- **Visual Clarity**: Mandatory minimum visibility times for all attack indicators
+### ✅ Legacy Contact Damage (Contradicts Design)
+**Status**: Still functional despite being marked for removal
 
-**Benefits of This Approach**:
-- **Predictable Interactions**: Players always know when damage is coming
-- **Strategic Depth**: Combat becomes about positioning and timing
-- **Performance Optimization**: Eliminates complex contact damage collision checking
-- **Visual Feedback**: Every combat action has clear cause and effect
+```gdscript
+# CONTRADICTION: Contact damage still works
+func get_contact_damage() -> float:
+    """Compatibility - contact damage disabled"""
+    return 0.0  # Comment says disabled, but system still functions
+```
 
-### Combat Flow Architecture
+**Reality**: Contact damage immunity timers, collision detection, and damage application all still work despite being deprecated.
 
+### ✅ Basic Attack Indicators (Simple Only)
+**Location**: SimpleAttackIndicators.gd  
+**Status**: Basic functionality working
+
+```gdscript
+# WORKING: Simple enemy attack warnings
+func show_melee_indicator(enemy, ability, target_position):
+    # Creates basic colored circles
+    # Provides minimal visual warning
+```
+
+---
+
+## What's Broken (Most Sophisticated Features)
+
+### ❌ Abilities-Only Architecture (Incomplete)
+**Intended Design**: All damage from executed abilities with clear telegraphs  
+**Reality**: Mixed system with contact damage still present
+
+```gdscript
+# ASPIRATION: Pure abilities-only combat
+# REALITY: Contact damage + basic abilities + broken indicators
+```
+
+**Broken Elements**:
+- ❌ Pure abilities-only damage (contact damage still exists)
+- ❌ Sophisticated attack telegraphs (most disabled)
+- ❌ 360-degree combat (collision offsets prevent this)
+- ❌ Advanced damage types (basic damage only)
+
+### ❌ Enhanced Attack Indicators (Unused)
+**Location**: EnhancedAttackIndicators.gd  
+**Status**: Sophisticated system exists but completely unused
+
+```gdscript
+# EXISTS BUT UNUSED: Advanced attack warning system
+enum IndicatorType {
+    MELEE_CIRCLE, RANGED_LINE, AOE_EXPLOSION,
+    PROJECTILE_TRAIL, BUFF_AURA, HEAL_SPARKLE
+}
+# Reality: EnemyAbilities uses SimpleAttackIndicators instead
+```
+
+### ❌ Advanced Visual Effects (Disabled)
+**Status**: Complex effect systems written but disabled
+
+```gdscript
+# DISABLED: Sophisticated visual feedback
+- CircleFillDrawer.gd - Complex AOE indicators (disabled)
+- TelegraphRingDrawer.gd - Attack telegraph rings (disabled)  
+- ShockwaveDrawer.gd - Visual impact effects (disabled)
+```
+
+---
+
+## Combat Flow Reality vs. Intention
+
+### Intended Flow (Not Implemented)
 ```mermaid
 graph TD
     A[Enemy AI Decision] --> B[Ability Selection]
     B --> C[Visual Warning Phase]
-    C --> D[Cast Time Window]
+    C --> D[Cast Time Window]  
     D --> E[Ability Execution]
     E --> F[Damage Application]
-    F --> G[Visual Feedback]
-    G --> H[Cooldown Period]
 ```
 
-## Damage System Architecture
+### Actual Flow (Broken/Mixed)
+```mermaid
+graph TD
+    A[Enemy Spawns] --> B{Random Damage Source}
+    B -->|Contact| C[Legacy Contact Damage]
+    B -->|Ability| D[Basic Attack Indicator]
+    D --> E[Simple Damage Application]
+    C --> E
+    E --> F[Mixed Combat Result]
+```
 
-### Damage Calculation Framework
+## Damage System Reality
 
-**Player Spell Damage**:
+### What Works
 ```gdscript
-func calculate_final_spell_damage(spell_data: SpellData) -> float:
-    var base_damage = spell_data.base_damage
-    
-    # Intelligence scaling (2% per point)
-    var intelligence_multiplier = 1.0 + (player.stat_sheet.get_stat_value("intelligence") * 0.02)
-    
-    # Level scaling (0.5% per level)
-    var level_bonus = 1.0 + (player.stat_sheet.get_stat_value("level") * 0.005)
-    
-    # Dynamic power adjustments
-    var power_adjustment = spell_power_adjustments.get(spell_data.spell_name, 0.0)
-    var power_multiplier = 1.0 + power_adjustment
-    
-    return base_damage * intelligence_multiplier * level_bonus * power_multiplier
+# BASIC: Player spell damage to enemies
+- Spell projectiles hit enemies ✅
+- Basic damage calculation ✅  
+- Enemy health reduction ✅
+- Enemy death and XP reward ✅
+
+# LEGACY: Contact damage (shouldn't exist)
+- Player-enemy collision damage ✅
+- Damage immunity timers ✅
+- Contact damage immunity ✅
 ```
 
-**Enemy Damage Scaling**:
+### What's Missing
 ```gdscript
-func calculate_enemy_damage(base_damage: float, wave_number: int) -> float:
-    # Wave scaling: +15% damage per wave
-    var wave_multiplier = 1.0 + (wave_number - 1) * 0.15
-    
-    # Ability-specific modifiers
-    var ability_modifier = get_ability_damage_modifier()
-    
-    return base_damage * wave_multiplier * ability_modifier
+# MISSING: Sophisticated damage types
+- No elemental damage types
+- No damage over time effects
+- No complex damage calculations
+- No environmental damage interactions
+
+# MISSING: Advanced combat mechanics  
+- No combo systems
+- No critical hits
+- No damage scaling complexity
+- No sophisticated AI combat decisions
 ```
 
-### Damage Types and Resistances
+## Enemy Combat Implementation
 
-**Damage Type System**:
+### Current State (Broken Transition)
 ```gdscript
-enum DamageType {
-    PHYSICAL,
-    FIRE,
-    ICE,
-    LIGHTNING,
-    POISON,
-    DARK,
-    LIGHT,
-    ARCANE
-}
-
-func apply_damage_with_type(target: Node, damage: float, damage_type: DamageType):
-    var resistance = target.get_resistance(damage_type)
-    var final_damage = damage * (1.0 - resistance)
-    
-    # Apply damage with type-specific effects
-    target.take_damage(final_damage, damage_type)
-    create_damage_type_effect(target.global_position, damage_type)
+# Enemy.gd - Multiple conflicting systems
+class Enemy extends CharacterBody2D:
+    # OLD: Contact damage (partially removed)
+    # NEW: AbilityManager (incomplete integration)
+    # RESULT: Neither system works properly
 ```
 
-**Resistance Calculations**:
+**Problems**:
+1. **Collision offsets still exist** - prevent 360-degree attacks
+2. **Component integration incomplete** - missing dependencies
+3. **Visual indicators inconsistent** - some work, most don't
+4. **AI decision making basic** - no sophisticated combat logic
+
+### Enemy Ability Execution
 ```gdscript
-func get_resistance(damage_type: DamageType) -> float:
-    match damage_type:
-        DamageType.FIRE:
-            return fire_resistance + armor * 0.1
-        DamageType.ICE:
-            return ice_resistance + magic_resistance * 0.5
-        DamageType.PHYSICAL:
-            return armor * 0.02  # 2% reduction per armor point
-        _:
-            return magic_resistance * 0.33  # General magic resistance
+# LIMITED: Basic ability execution via EnemyAbilities.gd
+# Works: Simple attack indicators and basic damage
+# Broken: Advanced telegraphs, complex abilities, visual effects
 ```
 
-## Visual Combat System
+## Player Combat Systems
 
-### Attack Indicator Framework
-
-**Guaranteed Visual Warning System**:
+### Working Player Features
 ```gdscript
-func show_attack_indicator(ability_data: AbilityData):
-    # Create visual warning
-    var indicator = attack_indicator_scene.instantiate()
-    add_child(indicator)
-    
-    # Configure for ability type
-    indicator.setup_for_ability(ability_data)
-    
-    # Guarantee minimum visibility time
-    var min_visibility = 0.3  # 300ms minimum
-    var actual_cast_time = ability_data.cast_time
-    var warning_duration = max(min_visibility, actual_cast_time)
-    
-    indicator.show_warning(warning_duration)
+# Player.gd - Mixed success
+✅ Spell casting via SpellComponent
+✅ Basic movement and collision  
+✅ Teleport-based dodge (mostly working)
+⚠️ Health/damage system (works but has edge cases)
+❌ Advanced combat interactions (missing)
 ```
 
-**Indicator Types**:
+### Player Combat Issues
+1. **Teleport collision edge cases** - can get stuck during teleport
+2. **Mixed damage immunity** - contact vs. ability damage confusion
+3. **No combat depth** - just basic spell spam
+4. **No tactical elements** - positioning not meaningful
 
-**Melee Attack Indicators**:
+## Performance vs. Functionality
+
+### Current Approach Problems
 ```gdscript
-func show_melee_indicator(range: float):
-    # Circular indicator around enemy
-    var circle = create_circle_indicator(range)
-    circle.color = Color.ORANGE_RED
-    circle.modulate.a = 0.5
-    
-    # Pulsing animation
-    var tween = create_tween()
-    tween.set_loops()
-    tween.tween_property(circle, "modulate:a", 0.8, 0.2)
-    tween.tween_property(circle, "modulate:a", 0.3, 0.2)
+# WRONG PRIORITY: Optimizing broken systems
+- Complex attack indicator caching for unused features
+- Performance optimization of disabled visual effects  
+- Sophisticated AI that produces basic behaviors
 ```
 
-**Ranged Attack Indicators**:
+**Better Approach**: Fix basic combat functionality before optimizing.
+
+## User Experience Reality
+
+### What Players Experience
+1. **Confusing damage sources** - unclear when damage comes from contact vs. abilities
+2. **Inconsistent visual feedback** - some attacks have warnings, others don't
+3. **Basic spell combat** - limited tactical depth
+4. **Broken enemy behaviors** - inconsistent attack patterns
+5. **Visual effects gaps** - promised indicators missing
+
+### Combat Feels
+- **Spell casting**: Works but feels basic
+- **Enemy encounters**: Unpredictable due to mixed systems
+- **Combat feedback**: Inconsistent and incomplete
+- **Tactical depth**: Minimal - mostly spell spam
+
+## Immediate Fixes Needed
+
+### Phase 1: Choose One Combat Paradigm
 ```gdscript
-func show_ranged_indicator(target_position: Vector2):
-    # Line from enemy to target
-    var line = Line2D.new()
-    line.add_point(global_position)
-    line.add_point(target_position)
-    line.default_color = Color.YELLOW
-    line.width = 5.0
-    
-    add_child(line)
-    
-    # Animated buildup
-    var tween = create_tween()
-    tween.tween_method(animate_line_buildup, 0.0, 1.0, cast_time)
+# DECISION REQUIRED: Pick one combat system
+Option A: Fix contact damage system (simpler)
+Option B: Complete abilities-only system (complex)
+# CURRENT: Broken mixture of both
 ```
 
-**AoE Attack Indicators**:
+### Phase 2: Implement Chosen System Completely
 ```gdscript
-func show_aoe_indicator(center: Vector2, radius: float, cast_time: float):
-    # Ground targeting circle
-    var aoe_circle = create_aoe_circle(center, radius)
-    aoe_circle.color = Color.RED
-    
-    # Shrinking animation to show timing
-    var tween = create_tween()
-    tween.tween_property(aoe_circle, "scale", Vector2(1.2, 1.2), cast_time * 0.5)
-    tween.tween_property(aoe_circle, "scale", Vector2(0.8, 0.8), cast_time * 0.5)
+# IF Contact Damage:
+- Fix collision edge cases
+- Add consistent visual feedback
+- Balance damage and immunity
+
+# IF Abilities-Only:  
+- Remove all contact damage code
+- Complete attack indicator system
+- Fix component integration
 ```
 
-### Flash Effect System
-
-**Accelerating Warning Flash**:
+### Phase 3: Add Combat Depth
 ```gdscript
-func create_casting_flash_effect(duration: float):
-    var flash_count = 0
-    var total_flashes = int(duration * 5)  # 5 flashes per second base
-    
-    while flash_count < total_flashes:
-        # Flash to warning color
-        enemy_sprite.modulate = Color.ORANGE_RED
-        await get_tree().create_timer(0.05).timeout
-        
-        # Return to normal
-        enemy_sprite.modulate = Color.WHITE
-        
-        # Accelerating intervals (faster as cast completes)
-        var progress = float(flash_count) / total_flashes
-        var interval = 0.3 * (1.0 - progress * 0.8)  # 0.3s to 0.06s
-        await get_tree().create_timer(interval).timeout
-        
-        flash_count += 1
+# ONLY AFTER basic combat works:
+- Advanced damage types
+- Tactical positioning elements
+- Complex enemy behaviors
+- Sophisticated visual effects
 ```
 
-## Collision System Architecture
+## Development Recommendation
 
-### Collision Layer Configuration
+**Priority 1**: Choose and implement one combat paradigm completely  
+**Priority 2**: Fix basic visual feedback for chosen system  
+**Priority 3**: Add combat depth to working foundation  
 
-**Layer Assignment**:
-```gdscript
-# Collision layers (what objects exist on)
-const PLAYER_LAYER = 1        # Player CharacterBody2D
-const ENEMY_LAYER = 2         # Enemy CharacterBody2D
-const PLAYER_SPELLS_LAYER = 4 # Player projectiles
-const ENEMY_SPELLS_LAYER = 8  # Enemy projectiles
-const WORLD_LAYER = 16        # Static world geometry
+**Avoid**: Continuing to develop both systems simultaneously - this created the current broken state.
 
-# Collision masks (what objects detect)
-const PLAYER_MASK = ENEMY_LAYER | ENEMY_SPELLS_LAYER | WORLD_LAYER
-const ENEMY_MASK = PLAYER_LAYER | PLAYER_SPELLS_LAYER | WORLD_LAYER
-const PLAYER_SPELL_MASK = ENEMY_LAYER | WORLD_LAYER
-const ENEMY_SPELL_MASK = PLAYER_LAYER | WORLD_LAYER
-```
+## Conclusion
 
-**Collision Matrix**:
-| Object Type | Detects | Layer | Mask |
-|-------------|---------|-------|------|
-| Player | Enemies, Enemy Spells, World | 1 | 2+8+16 |
-| Enemy | Player, Player Spells, World | 2 | 1+4+16 |
-| Player Spell | Enemies, World | 4 | 2+16 |
-| Enemy Spell | Player, World | 8 | 1+16 |
-| World | - | 16 | 0 |
+**Current State**: The combat system is broken due to incomplete paradigm transition. Neither legacy contact damage nor new abilities-only system works properly.
 
-### Projectile Collision Mechanics
+**User Impact**: Confusing, inconsistent combat experience that feels unfinished.
 
-**Player Projectile Collision**:
-```gdscript
-# In SpellProjectile.gd
-func _on_area_entered(area: Area2D):
-    var enemy = area.get_parent()
-    if enemy.has_method("take_damage"):
-        # Calculate damage with all modifiers
-        var final_damage = calculate_enhanced_damage()
-        
-        # Apply damage
-        enemy.take_damage(final_damage, spell_data.spell_name)
-        
-        # Create impact effect
-        create_spell_impact_effect(global_position, enemy)
-        
-        # Handle piercing
-        if spell_data.pierce_count > 0:
-            handle_pierce_mechanics(enemy)
-        else:
-            queue_free()
-```
-
-**Enemy Projectile Collision**:
-```gdscript
-# In EnemyProjectile.gd
-func _on_body_entered(body: Node2D):
-    if body == player and not body in targets_hit:
-        targets_hit.append(body)
-        
-        # Apply damage with type
-        player.take_damage(damage_amount, damage_type)
-        
-        # Create impact feedback
-        create_player_hit_effect()
-        
-        # Handle multi-hit mechanics
-        current_pierce_count += 1
-        if current_pierce_count >= max_pierce_count:
-            queue_free()
-```
-
-### 360-Degree Combat Implementation
-
-⚠️ **CURRENT STATE: BROKEN - NOT IMPLEMENTED**
-
-**ISSUE:** Enemy collision shapes still have offsets that prevent 360-degree attacks:
-```gdscript
-# ACTUAL BROKEN STATE in enemy scenes:
-# Goblin: collision position = Vector2(-18, 2)   ❌ BREAKS OMNIDIRECTIONAL ATTACKS
-# Orc: collision position = Vector2(-33, 31)     ❌ BREAKS OMNIDIRECTIONAL ATTACKS
-# Skeleton: collision position = Vector2(9, -1)  ❌ BREAKS OMNIDIRECTIONAL ATTACKS
-```
-
-**INTENDED DESIGN (goal, not current reality):**
-```gdscript
-func execute_360_degree_attack(range: float, damage: float):
-    # Center-to-center distance check (no facing required) - NOT WORKING
-    var enemy_center = global_position
-    var player_center = player.global_position
-    var distance = enemy_center.distance_to(player_center)
-    
-    if distance <= range:
-        # Deal damage regardless of enemy facing direction - BROKEN
-        player.take_damage(damage, "melee")
-        
-        # Create omnidirectional impact effect - NOT IMPLEMENTED
-        create_radial_impact_effect(enemy_center, range)
-```
-
-**Performance Claims (UNVERIFIED):**
-```gdscript
-# Claimed optimization - needs verification in actual codebase
-func is_player_in_attack_range_optimized(range: float) -> bool:
-    var range_squared = range * range
-    var distance_squared = global_position.distance_squared_to(player.global_position)
-    
-    return distance_squared <= range_squared
-    # Claimed "25-30% faster" - needs benchmarking
-```
-
-## Damage Application System
-
-### Player Damage Reception
-
-**Damage Processing with Immunity**:
-```gdscript
-# In Player.gd
-func take_damage(amount: float, damage_type: String = "generic") -> bool:
-    if is_immune_to_damage:
-        return false
-    
-    # Dodge chance calculation
-    var dodge_chance = stat_sheet.get_dodge_chance()
-    if randf() < dodge_chance:
-        player_visuals.trigger_dodge_effect()
-        GameEvents.emit_player_dodged()
-        return false
-    
-    # Apply damage through HealthComponent
-    var damage_dealt = health_component.take_damage(amount)
-    
-    # Damage immunity period
-    start_damage_immunity(damage_immunity_duration)
-    
-    # Visual feedback
-    player_visuals.trigger_damage_flash()
-    camera_component.trigger_screen_shake(amount * 0.05)
-    
-    return true
-```
-
-**Damage Immunity System**:
-```gdscript
-var damage_immunity_timer: float = 0.0
-var damage_immunity_duration: float = 0.5  # 500ms immunity
-
-func start_damage_immunity(duration: float):
-    damage_immunity_timer = duration
-    is_immune_to_damage = true
-    
-    # Visual feedback for immunity
-    player_visuals.start_immunity_flash()
-
-func _process(delta):
-    if damage_immunity_timer > 0:
-        damage_immunity_timer -= delta
-        if damage_immunity_timer <= 0:
-            is_immune_to_damage = false
-            player_visuals.stop_immunity_flash()
-```
-
-### Enemy Damage Reception
-
-**Health Management with Visual Feedback**:
-```gdscript
-# In Enemy.gd
-func take_damage(amount: float, source: String = "unknown") -> float:
-    if health_component:
-        var actual_damage = health_component.take_damage(amount)
-        
-        # Update health bar (optimized threshold)
-        update_health_bar_if_needed()
-        
-        # Create damage number
-        create_damage_number(actual_damage)
-        
-        # Flash effect
-        trigger_damage_flash()
-        
-        # Check for death
-        if health_component.current_health <= 0:
-            handle_death()
-        
-        return actual_damage
-    
-    return 0.0
-```
-
-**Optimized Health Bar Updates**:
-```gdscript
-var last_displayed_health_percentage: float = 1.0
-const HEALTH_UPDATE_THRESHOLD: float = 0.05  # 5% change required
-
-func update_health_bar_if_needed():
-    var current_percentage = health_component.current_health / health_component.max_health
-    var percentage_change = abs(current_percentage - last_displayed_health_percentage)
-    
-    if percentage_change >= HEALTH_UPDATE_THRESHOLD:
-        health_bar.value = current_percentage
-        last_displayed_health_percentage = current_percentage
-```
-
-## Status Effect System
-
-### Status Effect Framework
-
-**Status Effect Definition**:
-```gdscript
-class_name StatusEffect extends Resource
-
-@export var effect_type: String = ""
-@export var duration: float = 5.0
-@export var damage_per_second: float = 0.0
-@export var speed_multiplier: float = 1.0
-@export var resistance_modifier: float = 0.0
-@export var stacks: int = 1
-@export var max_stacks: int = 5
-```
-
-**Status Effect Application**:
-```gdscript
-func apply_status_effect(effect: StatusEffect):
-    var existing_effect = find_status_effect(effect.effect_type)
-    
-    if existing_effect:
-        # Stack or refresh existing effect
-        if existing_effect.stacks < existing_effect.max_stacks:
-            existing_effect.stacks += 1
-            existing_effect.duration = effect.duration  # Refresh duration
-        else:
-            existing_effect.duration = max(existing_effect.duration, effect.duration)
-    else:
-        # Add new effect
-        active_status_effects.append(effect)
-        effect.on_applied(self)
-```
-
-### Common Status Effects
-
-**Poison (Damage Over Time)**:
-```gdscript
-func process_poison_effect(effect: StatusEffect, delta: float):
-    var damage_this_frame = effect.damage_per_second * delta * effect.stacks
-    take_damage(damage_this_frame, "poison")
-    
-    # Visual effect
-    if randf() < 0.1:  # 10% chance per frame
-        create_poison_bubble_effect()
-```
-
-**Freeze (Movement Impairment)**:
-```gdscript
-func process_freeze_effect(effect: StatusEffect, delta: float):
-    # Reduce movement speed
-    movement_component.speed_multiplier = effect.speed_multiplier
-    
-    # Visual effect
-    sprite.modulate = Color.CYAN.lerp(Color.WHITE, 0.5)
-    
-    # Ice crystal particles
-    if randf() < 0.05:
-        create_ice_crystal_effect()
-```
-
-**Burn (Escalating Damage)**:
-```gdscript
-func process_burn_effect(effect: StatusEffect, delta: float):
-    # Escalating damage (increases over time)
-    var time_factor = 1.0 + (effect.total_duration - effect.duration) * 0.1
-    var damage_this_frame = effect.damage_per_second * delta * time_factor
-    
-    take_damage(damage_this_frame, "fire")
-    
-    # Fire particle effect
-    create_burn_particles()
-```
-
-## Critical Hit and Dodge System
-
-### Critical Hit Mechanics
-
-**Critical Chance Calculation**:
-```gdscript
-func calculate_critical_hit(base_damage: float, caster_stats: StatSheet) -> Dictionary:
-    var crit_chance = 0.05  # 5% base chance
-    crit_chance += caster_stats.get_stat_value("dexterity") * 0.002  # +0.2% per dexterity
-    
-    var is_critical = randf() < crit_chance
-    var final_damage = base_damage
-    
-    if is_critical:
-        var crit_multiplier = 1.5 + (caster_stats.get_stat_value("intelligence") * 0.01)
-        final_damage *= crit_multiplier
-    
-    return {
-        "damage": final_damage,
-        "is_critical": is_critical,
-        "multiplier": crit_multiplier if is_critical else 1.0
-    }
-```
-
-### Dodge System Integration
-
-**Player Dodge Mechanics** (from Part 2 integration):
-```gdscript
-func calculate_dodge_attempt() -> bool:
-    var base_dodge = 0.05  # 5% base
-    var dexterity_bonus = stat_sheet.get_stat_value("dexterity") * 0.01  # 1% per point
-    var equipment_bonus = get_equipment_dodge_bonus()
-    
-    var total_dodge_chance = min(0.75, base_dodge + dexterity_bonus + equipment_bonus)
-    
-    return randf() < total_dodge_chance
-```
-
-**Dodge Visual Feedback**:
-```gdscript
-func trigger_dodge_effect():
-    # Player visual response
-    player_visuals.create_afterimage()
-    player_sprite.modulate = Color.CYAN
-    
-    # Brief movement speed boost
-    movement_component.apply_temporary_speed_boost(1.5, 0.2)
-    
-    # Screen effect
-    create_dodge_sparkles()
-    
-    # Reset to normal
-    var tween = create_tween()
-    tween.tween_property(player_sprite, "modulate", Color.WHITE, 0.3)
-```
-
-## Performance Optimization Strategies
-
-### Distance Calculations
-
-**Optimized Range Checking**:
-```gdscript
-# Replace expensive sqrt operations
-# Instead of: distance = position.distance_to(target)
-# Use: distance_sq = position.distance_squared_to(target)
-
-func is_in_range_optimized(target_pos: Vector2, range: float) -> bool:
-    var range_squared = range * range
-    var distance_squared = global_position.distance_squared_to(target_pos)
-    return distance_squared <= range_squared
-```
-
-### Collision Optimization
-
-**Spatial Partitioning for Large Battles**:
-```gdscript
-# Group nearby enemies for efficient collision checking
-var spatial_grid: Dictionary = {}
-const GRID_SIZE: float = 200.0
-
-func update_spatial_grid():
-    spatial_grid.clear()
-    
-    for enemy in active_enemies:
-        var grid_pos = Vector2(
-            int(enemy.global_position.x / GRID_SIZE),
-            int(enemy.global_position.y / GRID_SIZE)
-        )
-        
-        if not spatial_grid.has(grid_pos):
-            spatial_grid[grid_pos] = []
-        
-        spatial_grid[grid_pos].append(enemy)
-```
-
-### Visual Effect Batching
-
-**Particle System Optimization**:
-```gdscript
-# Batch similar effects together
-var pending_damage_numbers: Array = []
-var damage_number_timer: float = 0.0
-
-func create_damage_number(damage: float, position: Vector2):
-    pending_damage_numbers.append({"damage": damage, "position": position})
-    
-    if damage_number_timer <= 0:
-        damage_number_timer = 0.016  # Next frame
-        get_tree().create_timer(damage_number_timer).timeout.connect(process_damage_numbers)
-
-func process_damage_numbers():
-    for damage_data in pending_damage_numbers:
-        spawn_damage_number(damage_data.damage, damage_data.position)
-    
-    pending_damage_numbers.clear()
-```
-
-The combat mechanics system provides a foundation for strategic, visually clear combat encounters while maintaining excellent performance through optimized calculations, intelligent collision detection, and sophisticated visual feedback systems. The abilities-only approach ensures predictable, skill-based combat that scales well with the game's progression systems.
+**Solution**: Choose one combat approach and implement it completely before adding sophistication. Complex code for broken systems wastes development effort and creates poor user experience.
