@@ -1,0 +1,62 @@
+# project.godot Additions for Spatial Collision System
+# Add these lines to your project.godot file in the [autoload] section
+
+# IMPORTANT: Add these AFTER your existing autoloads to maintain dependency order
+# Your existing autoloads should remain unchanged
+
+[autoload]
+
+# Existing autoloads (keep these as they are):
+# UnifiedDebugSystem="*res://scripts/debug/UnifiedDebugSystem.gd"
+# CollisionValidator="*res://scripts/CollisionValidator.gd"
+# GameEvents="*res://scripts/GameEvents.gd"
+# GameManager="*res://scripts/GameManager.gd"
+# GameConfig="*res://scripts/singletons/GameConfig.gd"
+# PlayerTracker="*res://scripts/singletons/PlayerTracker.gd"
+# WaveManager="*res://scripts/WaveManager.gd"
+# EnemySpawner="*res://scripts/EnemySpawner.gd"
+# (... all other existing autoloads ...)
+
+# NEW AUTOLOADS - Add these at the end:
+SpatialGrid="*res://spatial_collision_system/autoloads/SpatialGrid.gd"
+EnemyLODManager="*res://spatial_collision_system/autoloads/EnemyLODManager.gd"
+CollisionOptimizer="*res://spatial_collision_system/optimization/CollisionOptimizer.gd"
+
+# Example of complete autoload section after additions:
+# [autoload]
+# 
+# UnifiedDebugSystem="*res://scripts/debug/UnifiedDebugSystem.gd"
+# CollisionValidator="*res://scripts/CollisionValidator.gd"
+# GameEvents="*res://scripts/GameEvents.gd"
+# GameManager="*res://scripts/GameManager.gd"
+# GameConfig="*res://scripts/singletons/GameConfig.gd"
+# PlayerTracker="*res://scripts/singletons/PlayerTracker.gd"
+# WaveManager="*res://scripts/WaveManager.gd"
+# EnemySpawner="*res://scripts/EnemySpawner.gd"
+# AchievementNotificationManager="*res://scripts/singletons/AchievementNotificationManager.gd"
+# BiomeService="*res://scripts/BiomeService.gd"
+# GameStateManager="*res://scripts/core/GameStateManager.gd"
+# MetaSaveManager="*res://scripts/core/MetaSaveManager.gd"
+# RunSaveManager="*res://scripts/core/RunSaveManager.gd"
+# SettingsManager="*res://scripts/core/SettingsManager.gd"
+# SpatialGrid="*res://spatial_collision_system/autoloads/SpatialGrid.gd"
+# EnemyLODManager="*res://spatial_collision_system/autoloads/EnemyLODManager.gd"
+# CollisionOptimizer="*res://spatial_collision_system/optimization/CollisionOptimizer.gd"
+
+# VERIFICATION:
+# After adding these autoloads, you should see the following messages in the console when running the game:
+# ✅ SpatialGrid initialized - Grid size: 100px
+# ✅ EnemyLODManager initialized - Full: 50 Simplified: 150
+# ✅ CollisionOptimizer ready for performance monitoring
+
+# TROUBLESHOOTING:
+# If you get parser errors:
+# 1. Check that the spatial_collision_system folder is in the correct location
+# 2. Ensure all .gd files exist and are not corrupted
+# 3. Check that there are no circular dependencies in your existing autoloads
+# 4. Make sure Godot version is 4.4.1 or later
+
+# If performance issues occur:
+# 1. The system will automatically optimize based on performance
+# 2. Check CollisionOptimizer debug output for recommendations
+# 3. Adjust GameConfig parameters as needed

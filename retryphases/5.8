@@ -1,0 +1,382 @@
+# Improvements for Procedural Map Generation System
+
+## 1. Performance Optimizations
+
+### Improved Biome Blending (MapGenerator.gd)
+```gdscript
+# Add biome cache to reduce calculations
+var biome_cache = {}
+var color_blend_cache = {}
+
+func get_blended_color(world_pos: Vector2, blend_radius: float = 64.0) -> Color:
+	# Check cache first
+	var cache_key = Vector2i(int(world_pos.x / 32), int(world_pos.y / 32))
+	if color_blend_cache.has(cache_key):
+		return color_blend_cache[cache_key]
+	
+	var center_biome = get_biome_at_position(world_pos)
+	var center_color = BIOME_COLORS[center_biome]
+	
+	# Optimize: only blend if near biome edge
+	var needs_blending = false
+	var sample_positions = [
+		world_pos + Vector2(blend_radius, 0),
+		world_pos + Vector2(-blend_radius, 0),
+		world_pos + Vector2(0, blend_radius),
+		world_pos + Vector2(0, -blend_radius)
+	]
+	
+	for sample_pos in sample_positions:
+		if get_biome_at_position(sample_pos) != center_biome:
+			needs_blending = true
+			break
+	
+	if not needs_blending:
+		color_blend_cache[cache_key] = center_color
+		return center_color
+	
+	# Original blending code here...
+	# Cache the result
+	color_blend_cache[cache_key] = blended_color
+	return blended_color
+
+# Clear cache periodically
+func clear_cache():
+	if biome_cache.size() > 10000:
+		biome_cache.clear()
+	if color_blend_cache.size() > 5000:
+		color_blend_cache.clear()
+```
+
+### Optimized Chunk Drawing (Chunk.gd)
+```gdscript
+# Use larger base tiles with interpolation for smoother gradients
+func draw_terrain():
+	var tile_size = 64  # Larger tiles
+	var sub_samples = 2  # Subdivisions for smoother gradients
+	
+	for x in range(0, chunk_size, tile_size):
+		for y in range(0, chunk_size, tile_size):
+			draw_terrain_tile(Vector2(x, y), tile_size, sub_samples)
+
+func draw_terrain_tile(pos: Vector2, size: float, subdivisions: int):
+	var step = size / subdivisions
+	
+	# Get colors at corners for interpolation
+	var tl = map_generator.get_blended_color(position + pos)
+	var tr = map_generator.get_blended_color(position + pos + Vector2(size, 0))
+	var bl = map_generator.get_blended_color(position + pos + Vector2(0, size))
+	var br = map_generator.get_blended_color(position + pos + Vector2(size, size))
+	
+	# Draw subdivided tiles with bilinear interpolation
+	for sx in range(subdivisions):
+		for sy in range(subdivisions):
+			var t_x = float(sx) / subdivisions
+			var t_y = float(sy) / subdivisions
+			
+			# Bilinear interpolation
+			var top = tl.lerp(tr, t_x)
+			var bottom = bl.lerp(br, t_x)
+			var color = top.lerp(bottom, t_y)
+			
+			var detail = map_generator.get_detail_value(position + pos + Vector2(sx * step, sy * step))
+			color = color * (1.0 + detail * 0.1)
+			
+			draw_rect(
+				Rect2(pos + Vector2(sx * step, sy * step), Vector2(step, step)),
+				color
+			)
+```
+
+## 2. Enhanced POI Management
+
+### Improved POIGenerator.gd
+```gdscript
+# Better POI tracking with chunk-based cleanup
+const MAX_TRACKED_POIS = 1000
+var poi_by_chunk: Dictionary = {}  # Track POIs by chunk for cleanup
+
+func get_pois_for_chunk(chunk_pos: Vector2i, chunk_size: int) -> Array:
+	# Check if we already generated POIs for this chunk
+	var chunk_key = str(chunk_pos)
+	if poi_by_chunk.has(chunk_key):
+		return poi_by_chunk[chunk_key]
+	
+	var pois = []
+	# ... existing generation code ...
+	
+	# Store by chunk for easy cleanup
+	poi_by_chunk[chunk_key] = pois
+	
+	# Cleanup distant POIs
+	cleanup_distant_pois(chunk_pos)
+	
+	return pois
+
+func cleanup_distant_pois(current_chunk: Vector2i):
+	if poi_by_chunk.size() < MAX_TRACKED_POIS:
+		return
+		
+	var chunks_to_remove = []
+	for chunk_key in poi_by_chunk:
+		var chunk_pos = str_to_var(chunk_key)
+		if chunk_pos.distance_to(current_chunk) > 10:  # 10 chunks away
+			chunks_to_remove.append(chunk_key)
+	
+	for key in chunks_to_remove:
+		var pois = poi_by_chunk[key]
+		for poi in pois:
+			generated_pois.erase(poi.position)
+		poi_by_chunk.erase(key)
+```
+
+## 3. Visual Enhancements
+
+### Better Texture Patterns (Chunk.gd)
+```gdscript
+func draw_texture_detail(pos: Vector2, size: float, color: Color):
+	var world_pos = position + pos
+	var biome = map_generator.get_biome_at_position(world_pos)
+	var detail_value = map_generator.get_detail_value(world_pos)
+	
+	match biome:
+		MapGenerator.Biome.PLAINS:
+			# Varied grass with wind effect
+			var grass_count = int(3 + detail_value * 3)
+			for i in range(grass_count):
+				var offset = Vector2(
+					randf() * size,
+					randf() * size
+				)
+				var height = 4 + randf() * 4
+				var sway = sin(Time.get_ticks_msec() * 0.001 + offset.x * 0.1) * 2
+				draw_line(
+					pos + offset,
+					pos + offset + Vector2(sway, -height),
+					color,
+					1.0
+				)
+		
+		MapGenerator.Biome.DESERT:
+			# Multiple sand ripples
+			var ripple_count = int(2 + abs(detail_value))
+			for i in range(ripple_count):
+				var ripple_offset = i * size / (ripple_count + 1)
+				draw_arc(
+					pos + Vector2(size/2, ripple_offset),
+					size/3 - i * 2,
+					0, PI,
+					6,
+					color * (1.0 - i * 0.1),
+					1.0
+				)
+		
+		MapGenerator.Biome.LAVA_PLAINS:
+			# Cracks with glow
+			if detail_value > 0.4:
+				var crack_start = pos + Vector2(randf() * size, 0)
+				var crack_end = pos + Vector2(randf() * size, size)
+				draw_line(crack_start, crack_end, Color(0.8, 0.2, 0.1), 2.0)
+				draw_line(crack_start, crack_end, Color(1.0, 0.4, 0.2, 0.3), 4.0)
+		
+		MapGenerator.Biome.CRYSTAL_CAVERNS:
+			# Crystalline facets
+			if detail_value > 0.2:
+				var center = pos + Vector2(size/2, size/2)
+				for i in range(3):
+					var angle = i * TAU / 3 + detail_value
+					var end_pos = center + Vector2(cos(angle), sin(angle)) * size/3
+					draw_line(center, end_pos, color * 1.2, 1.0)
+```
+
+### Biome-Specific Decoration Density
+```gdscript
+# In MapGenerator.gd
+const BIOME_DECORATION_DENSITY = {
+	Biome.PLAINS: {"min": 15, "max": 40},
+	Biome.DESERT: {"min": 5, "max": 15},
+	Biome.DESOLATE: {"min": 8, "max": 20},
+	Biome.LAVA_PLAINS: {"min": 3, "max": 10},
+	Biome.MANA_FIELDS: {"min": 20, "max": 50},
+	Biome.TUNDRA: {"min": 5, "max": 15},
+	Biome.MUSHROOM_FOREST: {"min": 25, "max": 60},
+	Biome.CRYSTAL_CAVERNS: {"min": 15, "max": 35}
+}
+
+func get_decoration_positions(chunk_pos: Vector2i, chunk_size: int) -> Array:
+	var decorations = []
+	var rng = RandomNumberGenerator.new()
+	rng.seed = hash(str(chunk_pos) + str(world_seed))
+	
+	var base_pos = Vector2(chunk_pos * chunk_size)
+	
+	# Sample biome at chunk center
+	var chunk_center = base_pos + Vector2(chunk_size/2, chunk_size/2)
+	var primary_biome = get_biome_at_position(chunk_center)
+	var density = BIOME_DECORATION_DENSITY[primary_biome]
+	
+	var decoration_count = rng.randi_range(density.min, density.max)
+	
+	# Use Poisson disk sampling for better distribution
+	var positions = generate_poisson_disk_samples(
+		base_pos, chunk_size, 
+		chunk_size / sqrt(decoration_count),
+		rng
+	)
+	
+	for pos in positions:
+		var biome = get_biome_at_position(pos)
+		var type = get_decoration_type_for_biome(biome, rng)
+		
+		decorations.append({
+			"position": pos,
+			"type": type,
+			"scale": rng.randf_range(0.8, 1.2),
+			"rotation": rng.randf() * TAU,
+			"variant": rng.randi() % 3  # For visual variety
+		})
+	
+	return decorations
+
+# Better spatial distribution
+func generate_poisson_disk_samples(start: Vector2, size: float, min_dist: float, rng: RandomNumberGenerator) -> Array:
+	var samples = []
+	var active_list = []
+	var grid_size = min_dist / sqrt(2)
+	var grid = {}
+	
+	# Start with random first sample
+	var first = start + Vector2(rng.randf() * size, rng.randf() * size)
+	samples.append(first)
+	active_list.append(first)
+	grid[Vector2i(int(first.x / grid_size), int(first.y / grid_size))] = first
+	
+	while active_list.size() > 0:
+		var index = rng.randi() % active_list.size()
+		var current = active_list[index]
+		var found = false
+		
+		# Try to place new samples around current
+		for i in range(30):
+			var angle = rng.randf() * TAU
+			var dist = min_dist + rng.randf() * min_dist
+			var candidate = current + Vector2(cos(angle), sin(angle)) * dist
+			
+			# Check bounds
+			if candidate.x < start.x or candidate.x >= start.x + size:
+				continue
+			if candidate.y < start.y or candidate.y >= start.y + size:
+				continue
+			
+			# Check distance to neighbors
+			var grid_pos = Vector2i(int(candidate.x / grid_size), int(candidate.y / grid_size))
+			var valid = true
+			
+			for gx in range(-2, 3):
+				for gy in range(-2, 3):
+					var check_pos = grid_pos + Vector2i(gx, gy)
+					if grid.has(check_pos):
+						if grid[check_pos].distance_to(candidate) < min_dist:
+							valid = false
+							break
+				if not valid:
+					break
+			
+			if valid:
+				samples.append(candidate)
+				active_list.append(candidate)
+				grid[grid_pos] = candidate
+				found = true
+				break
+		
+		if not found:
+			active_list.remove_at(index)
+	
+	return samples
+```
+
+## 4. Save/Load System
+
+### ChunkManager.gd additions
+```gdscript
+# Chunk data persistence
+func save_chunk_data(chunk_pos: Vector2i) -> Dictionary:
+	if not chunks.has(chunk_pos):
+		return {}
+	
+	var chunk = chunks[chunk_pos]
+	return {
+		"position": chunk_pos,
+		"poi_data": chunk.poi_data,
+		"custom_data": chunk.get_custom_data() if chunk.has_method("get_custom_data") else {}
+	}
+
+func load_chunk_data(chunk_pos: Vector2i, data: Dictionary):
+	if chunks.has(chunk_pos):
+		var chunk = chunks[chunk_pos]
+		if data.has("poi_data"):
+			chunk.poi_data = data.poi_data
+		if data.has("custom_data") and chunk.has_method("set_custom_data"):
+			chunk.set_custom_data(data.custom_data)
+```
+
+## 5. Debug Visualization
+
+### Add debug mode to ChunkManager.gd
+```gdscript
+@export var debug_mode: bool = false
+@export var show_chunk_borders: bool = false
+@export var show_biome_map: bool = false
+
+func _draw():
+	if not debug_mode:
+		return
+		
+	if show_chunk_borders:
+		for chunk_pos in chunks:
+			var world_pos = Vector2(chunk_pos * CHUNK_SIZE)
+			draw_rect(
+				Rect2(world_pos - global_position, Vector2(CHUNK_SIZE, CHUNK_SIZE)),
+				Color.WHITE,
+				false,
+				2.0
+			)
+			draw_string(
+				get_theme_default_font(),
+				world_pos - global_position + Vector2(10, 30),
+				str(chunk_pos),
+				HORIZONTAL_ALIGNMENT_LEFT,
+				-1,
+				16,
+				Color.WHITE
+			)
+	
+	if show_biome_map:
+		# Draw minimap of biomes
+		var minimap_size = 200
+		var sample_area = 20000  # 20k x 20k world area
+		var step = sample_area / minimap_size
+		
+		for x in range(minimap_size):
+			for y in range(minimap_size):
+				var world_pos = player_node.global_position + Vector2(
+					(x - minimap_size/2) * step,
+					(y - minimap_size/2) * step
+				)
+				var biome = map_generator.get_biome_at_position(world_pos)
+				var color = MapGenerator.BIOME_COLORS[biome]
+				draw_rect(
+					Rect2(Vector2(x * 2, y * 2), Vector2(2, 2)),
+					color
+				)
+```
+
+## Key Improvements Summary
+
+1. **Performance**: Caching, optimized blending, better terrain interpolation
+2. **Memory**: Chunk-based POI cleanup, bounded caches
+3. **Visuals**: Poisson disk sampling, biome-specific densities, enhanced textures
+4. **Features**: Save/load support, debug visualization
+5. **Quality**: Smoother gradients, better decoration distribution
+
+These improvements maintain the simplicity of the original design while significantly enhancing performance and visual quality.
