@@ -17,40 +17,53 @@ See `/mnt/c/FFS/guiding light/usages and plans/ENEMY_SYSTEM_RESTORATION_PLAN.md`
 
 ---
 
-## Overview (INTENDED ARCHITECTURE - NOT CURRENT STATE)
+## Overview (BROKEN SYSTEM - REQUIRES MAJOR FIXES)
 
-The FFS Wizard RPG is designed to implement a sophisticated, modular enemy system built on Godot 4.4.1's CharacterBody2D physics with abilities-only combat, data-driven configuration, and performance optimization for large-scale encounters. **This architecture is partially implemented but not functional.**
+The FFS Wizard RPG enemy system is currently in a **broken state** following an incomplete refactoring. The system was intended to be a sophisticated, modular enemy system but the transition was never completed. **The current implementation has multiple critical issues that prevent proper gameplay.**
 
 ## Core Enemy Architecture
 
-### Main Enemy Class
+### Main Enemy Class (BROKEN IMPLEMENTATION)
 
 **File Path**: `res://scripts/Enemy.gd`  
 **Extends**: CharacterBody2D  
 **Scene Path**: `res://scenes/Enemy.tscn`
 
-The primary enemy implementation uses a component-based architecture with abilities-only combat:
+The enemy implementation is currently broken due to incomplete refactoring. Multiple issues exist:
 
 ```gdscript
 extends CharacterBody2D
 class_name Enemy
 
-# Core properties (preserved from original)
-@export var enemy_data: EnemyData
-@export var enemy_type: String = "goblin"
-var health: float = 100.0
-var max_health: float = 100.0
-var damage: float = 20.0
-var speed: float = 150.0
-var xp_reward: int = 10
-var wave_multipliers: Dictionary = {}
+# BROKEN: Multiple conflicting systems exist
+# - Old direct combat system (partially removed)
+# - New component system (incomplete)
+# - Collision shapes have incorrect offsets
+# - Attack indicators disabled/broken
+# - Component dependencies missing
 
-# NEW: Abilities-only system components
-var health_component: HealthComponent
-var movement_component: MovementComponent
-var ability_manager: AbilityManager  # NEW: Single combat system
-var enemy_abilities: EnemyAbilitiesSimple  # Execution component
+# Issues in current code:
+# 1. Collision shape offsets prevent 360-degree attacks
+# 2. Multiple combat systems conflict
+# 3. Component integration incomplete
+# 4. Visual feedback broken
 ```
+
+## CRITICAL ISSUES SUMMARY
+
+### ❌ **BLOCKING ISSUES:**
+1. **Collision System Broken**: Shapes have offsets preventing proper 360-degree attacks
+2. **Combat System Conflicts**: Old and new systems coexist, causing conflicts  
+3. **Component Dependencies Missing**: Incomplete component integration
+4. **Visual Indicators Broken**: Attack telegraphs disabled or non-functional
+5. **Ability Execution Broken**: Components not properly connected
+
+### ⚠️ **IMPACT ON GAMEPLAY:**
+- Enemies cannot attack properly in all directions
+- Combat feedback is missing or broken
+- Player cannot predict enemy attacks
+- System performance is inconsistent
+- Debugging is extremely difficult
 
 #### Component Initialization
 

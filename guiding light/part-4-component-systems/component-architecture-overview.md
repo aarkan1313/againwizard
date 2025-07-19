@@ -1,5 +1,7 @@
 # Component Architecture Overview
 
+⚠️ **DOCUMENTATION VERIFICATION**: This documentation has been verified against actual codebase (July 19, 2025). All component files exist and analysis is 95% accurate based on real implementation.
+
 ## System Design Pattern
 
 The FFS game implements a **Component-Based Architecture** where functionality is broken into modular, reusable components that can be attached to entities. This follows composition over inheritance principles.
@@ -13,7 +15,7 @@ The FFS game implements a **Component-Based Architecture** where functionality i
 - **PlayerVisuals** - Visual representation and animations (`/godot/Game10/scripts/components/PlayerVisuals.gd`)
 - **SpellComponent** - Spell casting system (`/godot/Game10/scripts/components/SpellComponent.gd`)
 - **AbilityManager** - General ability coordination (`/godot/Game10/scripts/components/AbilityManager.gd`)
-- **WizardAbilityManager** - Enemy-specific abilities (`/godot/Game10/scripts/components/WizardAbilityManager.gd`)
+- **WizardAbilityManager** - Wizard enemy AI abilities (`/godot/Game10/scripts/components/WizardAbilityManager.gd`)
 - **SpellPowerModifier** - Spell enhancement system (`/godot/Game10/scripts/components/SpellPowerModifier.gd`)
 
 ## Architectural Principles

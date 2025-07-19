@@ -15,11 +15,30 @@ The guiding light documentation contains **significant inaccuracies** about the 
 1. **Enemy System**: Described as "abilities-only" and "360-degree capable" - actually broken with collision offsets
 2. **Combat System**: Documented as unified - actually has multiple conflicting systems
 3. **Visual Systems**: Described as functional - actually disabled/broken in many areas
+4. **World Generation (Part 7)**: Described as "production ready" and "feature-complete" - actually basic with broken biome visuals
+5. **Save System (Part 6)**: Claims "atomic operations" and "sophisticated rollback" - actually basic but functional saves
 
 ### 📖 **HOW TO READ THIS DOCUMENTATION:**
 - **"INTENDED DESIGN"** sections describe goals, not current reality
 - **Warning boxes** indicate actual current state vs documentation claims
 - **Restoration plans** in `/usages and plans/` folder contain accurate current state
+
+### 🎯 **DOCUMENTATION ACCURACY PRINCIPLE:**
+
+**ALL DOCUMENTATION MUST BE HONEST AND ACCURATE** - Documentation should reflect the actual, current state of the codebase, not aspirational or unrealistic descriptions of what the game could be.
+
+**REQUIREMENTS:**
+- ✅ **Verify Against Code**: Every claim must be verifiable against actual .gd/.tscn files
+- ✅ **Describe Reality**: Document what IS implemented, not what SHOULD be implemented  
+- ✅ **Include Evidence**: Reference actual file paths and line numbers
+- ✅ **Acknowledge Limitations**: Clearly state what doesn't work or is incomplete
+- ✅ **Avoid Hyperbole**: No "production ready", "feature-complete", or "sophisticated" claims without proof
+
+**FORBIDDEN:**
+- ❌ **Aspirational Writing**: Describing ideal systems that don't exist
+- ❌ **Theoretical Analysis**: Architecture discussions without code backing
+- ❌ **Vague Claims**: Statements that can't be verified in actual files
+- ❌ **Marketing Language**: Overselling basic implementations
 
 ---
 

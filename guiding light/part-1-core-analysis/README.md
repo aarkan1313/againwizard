@@ -5,7 +5,7 @@
 **Game Type**: 2D Wizard RPG with Infinite World Generation  
 **Engine**: Godot 4.4.1  
 **Language**: GDScript  
-**Current Branch**: `string-formula-optimization`  
+**Current Branch**: `enemy-system-overhaul`  
 **Architecture**: Multi-Phase Development (Currently Phase 4+)
 
 ## Technology Stack
@@ -152,8 +152,8 @@ The project follows a structured phase-based development approach:
 
 ## Current Development Focus
 
-**Branch**: `string-formula-optimization`  
-**Focus**: Performance optimization of string handling and formula calculations in the spell system.
+**Branch**: `enemy-system-overhaul`  
+**Focus**: Overhaul of enemy systems including AI, spawning, and combat mechanics.
 
 ## Getting Started
 

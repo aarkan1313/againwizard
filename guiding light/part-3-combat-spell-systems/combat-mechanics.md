@@ -1,8 +1,26 @@
 # Combat Mechanics Analysis
 
-## Overview
+⚠️ **CRITICAL STATUS UPDATE - July 19, 2025**
 
-The FFS Wizard RPG implements a sophisticated combat system built around an **abilities-only architecture** that completely eliminates traditional contact damage in favor of telegraphed, ability-based interactions. The system emphasizes visual clarity, performance optimization, and strategic depth through timing-based mechanics and intelligent damage calculations.
+## ACTUAL SYSTEM STATE: BROKEN/INCOMPLETE
+
+**This documentation describes aspirational architecture that is NOT currently functional.**
+
+### ❌ **CRITICAL REALITY CHECK:**
+- **NOT abilities-only** - multiple conflicting combat systems coexist
+- **NOT 360-degree combat** - collision offsets break omnidirectional attacks
+- **NOT sophisticated damage types** - basic damage system only
+- **NOT advanced visual indicators** - most attack telegraphs disabled/broken
+- **NOT performance optimized** - claimed optimizations not fully implemented
+
+### 🔧 **ACTUAL CURRENT STATE:**
+The combat system has basic spell-to-enemy damage working, but enemy combat is broken due to incomplete refactoring. Most "sophisticated" features described below are aspirational goals, not current implementation.
+
+---
+
+## Overview (INTENDED DESIGN - NOT CURRENT REALITY)
+
+The FFS Wizard RPG is intended to implement a sophisticated combat system built around an **abilities-only architecture**, but this system is currently broken and incomplete.
 
 ## Core Combat Philosophy
 
@@ -272,31 +290,41 @@ func _on_body_entered(body: Node2D):
 
 ### 360-Degree Combat Implementation
 
-**True Omnidirectional Attacks**:
+⚠️ **CURRENT STATE: BROKEN - NOT IMPLEMENTED**
+
+**ISSUE:** Enemy collision shapes still have offsets that prevent 360-degree attacks:
+```gdscript
+# ACTUAL BROKEN STATE in enemy scenes:
+# Goblin: collision position = Vector2(-18, 2)   ❌ BREAKS OMNIDIRECTIONAL ATTACKS
+# Orc: collision position = Vector2(-33, 31)     ❌ BREAKS OMNIDIRECTIONAL ATTACKS
+# Skeleton: collision position = Vector2(9, -1)  ❌ BREAKS OMNIDIRECTIONAL ATTACKS
+```
+
+**INTENDED DESIGN (goal, not current reality):**
 ```gdscript
 func execute_360_degree_attack(range: float, damage: float):
-    # Center-to-center distance check (no facing required)
+    # Center-to-center distance check (no facing required) - NOT WORKING
     var enemy_center = global_position
     var player_center = player.global_position
     var distance = enemy_center.distance_to(player_center)
     
     if distance <= range:
-        # Deal damage regardless of enemy facing direction
+        # Deal damage regardless of enemy facing direction - BROKEN
         player.take_damage(damage, "melee")
         
-        # Create omnidirectional impact effect
+        # Create omnidirectional impact effect - NOT IMPLEMENTED
         create_radial_impact_effect(enemy_center, range)
 ```
 
-**Performance Optimization**:
+**Performance Claims (UNVERIFIED):**
 ```gdscript
-# Use distance-squared for performance
+# Claimed optimization - needs verification in actual codebase
 func is_player_in_attack_range_optimized(range: float) -> bool:
     var range_squared = range * range
     var distance_squared = global_position.distance_squared_to(player.global_position)
     
     return distance_squared <= range_squared
-    # 25-30% faster than using distance_to()
+    # Claimed "25-30% faster" - needs benchmarking
 ```
 
 ## Damage Application System

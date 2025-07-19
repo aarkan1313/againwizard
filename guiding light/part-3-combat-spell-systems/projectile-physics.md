@@ -1,8 +1,25 @@
 # Projectile Physics System
 
-## Overview
+⚠️ **DOCUMENTATION ACCURACY WARNING - July 19, 2025**
 
-The FFS Wizard RPG implements a comprehensive projectile physics system that handles both player spells and enemy projectiles with sophisticated collision detection, visual effects, and performance optimizations. The system emphasizes visual clarity, predictable behavior, and seamless integration with the game's combat mechanics.
+## CURRENT SYSTEM STATE: BASIC IMPLEMENTATION
+
+**This documentation describes some advanced features that may not be fully implemented.**
+
+### 📋 **ACTUAL IMPLEMENTATION STATUS:**
+- ✅ **Basic projectile physics work** - Player spells hit enemies correctly
+- ✅ **Collision layer system functional** - Layer separation working
+- ⚠️ **Advanced features may be aspirational** - Complex collision and visual effects described may not exist
+- ⚠️ **Performance claims need verification** - Optimization percentages not benchmarked
+
+### 🔧 **CURRENT REALITY:**
+The projectile system has working basic functionality but may lack some of the sophisticated features described below.
+
+---
+
+## Overview (MIXED IMPLEMENTATION STATUS)
+
+The FFS Wizard RPG implements a projectile physics system that handles both player spells and enemy projectiles with basic collision detection and visual effects. Some advanced features described below may be intended design rather than current implementation.
 
 ## Core Projectile Architecture
 

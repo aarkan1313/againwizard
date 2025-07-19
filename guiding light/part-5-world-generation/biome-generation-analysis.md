@@ -1,10 +1,27 @@
 # Biome Generation Analysis
 
-## BiomeService.gd
+⚠️ **CRITICAL STATUS UPDATE - July 19, 2025**
+
+## CURRENT SYSTEM STATE: LOGIC WORKS, VISUALS BROKEN
+
+**This documentation describes biome logic that exists but has critical visual rendering issues.**
+
+### ❌ **CRITICAL VISUAL ISSUES:**
+- **All chunks appear green** - biome color assignment not working
+- **No visible biome diversity** - despite 8 biome types being defined
+- **Broken rendering pipeline** - logic generates biomes but visuals don't reflect them
+- **Basic functionality only** - missing advanced features described below
+
+### 🔧 **ACTUAL CURRENT STATE:**
+BiomeService.gd exists and calculates biome types correctly, but the rendering system doesn't display the calculated biome colors, making all chunks appear as basic green terrain.
+
+---
+
+## BiomeService.gd (FUNCTIONAL LOGIC, BROKEN VISUALS)
 
 **Location**: `/scripts/BiomeService.gd`  
 **Extends**: Node  
-**Purpose**: Centralized biome logic singleton - single source of truth for biome generation
+**Purpose**: Biome calculation system with working logic but broken visual output
 
 ### Core Biome System
 
