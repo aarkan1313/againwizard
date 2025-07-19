@@ -1,8 +1,25 @@
 # Enemy Systems Analysis
 
-## Overview
+⚠️ **CRITICAL STATUS UPDATE - July 19, 2025**
 
-The FFS Wizard RPG implements an **abilities-only combat system** where enemies have moved away from traditional contact damage mechanics. Combat interactions occur through an ability management system with AI decision-making, visual attack indicators, and 360-degree combat mechanics.
+## ACTUAL SYSTEM STATE: BROKEN/INCOMPLETE
+
+**This documentation describes intended architecture that is NOT currently functional.**
+
+### ❌ **CRITICAL REALITY CHECK:**
+- **NOT abilities-only** - multiple combat systems still coexist and conflict
+- **NOT 360-degree combat** - collision offsets break directional attacks
+- **NOT functional AI** - component integration incomplete  
+- **NOT working visual indicators** - attack telegraphs disabled/broken
+
+### 🔧 **ACTUAL CURRENT STATE:**
+The enemy system is in a **broken transitional state** after incomplete refactoring. See restoration plan: `/mnt/c/FFS/guiding light/usages and plans/ENEMY_SYSTEM_RESTORATION_PLAN.md`
+
+---
+
+## Overview (INTENDED DESIGN - NOT CURRENT REALITY)
+
+The FFS Wizard RPG is intended to implement an **abilities-only combat system** where enemies move away from traditional contact damage mechanics. **This system is currently broken and non-functional.**
 
 ## Core Enemy Architecture
 
@@ -56,11 +73,21 @@ func apply_wave_scaling(wave_number: int):
 
 #### 360-Degree Combat System
 
-All enemies can attack in any direction regardless of facing:
+⚠️ **CURRENT STATE: BROKEN**
 
+**ISSUE:** Collision shapes still have offsets that break 360-degree attacks:
+```gdscript
+# ACTUAL BROKEN STATE in enemy scene files:
+# Goblin: position = Vector2(-18, 2)   ❌ DIRECTIONAL VULNERABILITY
+# Orc: position = Vector2(-33, 31)     ❌ DIRECTIONAL VULNERABILITY  
+# Skeleton: position = Vector2(9, -1)  ❌ DIRECTIONAL VULNERABILITY
+# Wizard: position = Vector2(-2, 7)    ❌ DIRECTIONAL VULNERABILITY
+```
+
+**INTENDED DESIGN (goal):**
 ```gdscript
 func execute_melee_ability():
-    # TRUE 360-degree range check
+    # TRUE 360-degree range check (NOT WORKING)
     var enemy_center = global_position
     var player_center = player.global_position
     var distance = enemy_center.distance_to(player_center)
@@ -69,11 +96,6 @@ func execute_melee_ability():
         # Deal damage regardless of facing direction
         player.take_damage(damage_amount)
 ```
-
-**Combat Advantages**:
-- **Eliminates Positioning Exploits**: Players can't simply stand behind enemies
-- **Realistic Combat**: More natural feeling for magical/fantasy enemies
-- **Performance Optimized**: Single distance check vs complex facing calculations
 
 #### Health Bar Optimization
 

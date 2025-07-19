@@ -1,8 +1,25 @@
 # Enemy System Analysis
 
-## Overview
+⚠️ **CRITICAL STATUS UPDATE - July 19, 2025**
 
-The FFS Wizard RPG implements a sophisticated, modular enemy system built on Godot 4.4.1's CharacterBody2D physics with abilities-only combat, data-driven configuration, and performance optimization for large-scale encounters. The system supports multiple AI behaviors, visual attack indicators, and scalable spawning for wave-based survival gameplay.
+## CURRENT SYSTEM STATE: BROKEN/INCOMPLETE
+
+The enemy system is currently in a **broken transitional state** following an incomplete refactoring from single-scene to individual-scene architecture. The documentation below describes the **intended final architecture**, not the current broken implementation.
+
+### ❌ **CRITICAL ISSUES (BLOCKING GAMEPLAY):**
+1. **Collision shapes still have offsets** - breaking 360-degree attack goals
+2. **Multiple combat systems coexist** - causing conflicts and inconsistent behavior  
+3. **Component integration incomplete** - missing dependencies, broken ability execution
+4. **Visual indicators disabled/broken** - no attack telegraphs working properly
+
+### 🔧 **IMMEDIATE ACTION REQUIRED:**
+See `/mnt/c/FFS/guiding light/usages and plans/ENEMY_SYSTEM_RESTORATION_PLAN.md` for detailed fix strategy.
+
+---
+
+## Overview (INTENDED ARCHITECTURE - NOT CURRENT STATE)
+
+The FFS Wizard RPG is designed to implement a sophisticated, modular enemy system built on Godot 4.4.1's CharacterBody2D physics with abilities-only combat, data-driven configuration, and performance optimization for large-scale encounters. **This architecture is partially implemented but not functional.**
 
 ## Core Enemy Architecture
 
@@ -196,6 +213,16 @@ class_name EnemyData
 
 ### Collision Configuration
 
+⚠️ **ACTUAL CURRENT STATE - BROKEN:**
+```gdscript
+# CURRENT BROKEN STATE - Individual enemy scenes still have offsets:
+# Goblin: position = Vector2(-18, 2)   ❌ BREAKS 360° ATTACKS
+# Orc: position = Vector2(-33, 31)     ❌ BREAKS 360° ATTACKS  
+# Skeleton: position = Vector2(9, -1)  ❌ BREAKS 360° ATTACKS
+# Wizard: position = Vector2(-2, 7)    ❌ BREAKS 360° ATTACKS
+```
+
+**INTENDED ARCHITECTURE (NOT IMPLEMENTED):**
 ```gdscript
 @export_group("Collision Settings")
 @export var collision_radius: float = 20.0  # Main hitbox size (for movement/spells hitting enemy)
@@ -407,9 +434,17 @@ The enemy system integrates with WaveManager for progressive difficulty:
 
 ### Abilities-Only Combat System
 
-The enemy system uses a unified abilities-only combat approach, removing three overlapping attack systems:
+⚠️ **ACTUAL STATE - PARTIALLY BROKEN:**
+
+**ISSUE:** Multiple combat systems still coexist instead of being unified:
+- ❌ Legacy contact damage system still exists alongside ability system
+- ❌ Component integration incomplete 
+- ❌ 360-degree attacks broken due to collision offsets
+- ❌ Visual indicators disabled or malfunctioning
+
+**INTENDED DESIGN (GOAL):**
 - Single AbilityManager for all combat decisions
-- Consistent ability execution through EnemyAbilities component
+- Consistent ability execution through EnemyAbilities component  
 - 360-degree attack capability with circular collision detection
 
 ### Memory Management

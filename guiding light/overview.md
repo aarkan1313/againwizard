@@ -1,5 +1,30 @@
 # Godot 4.4.1 2D Game Analysis Request
 
+⚠️ **DOCUMENTATION INTEGRITY ALERT - July 19, 2025**
+
+## CRITICAL DOCUMENTATION ISSUE DISCOVERED
+
+The guiding light documentation contains **significant inaccuracies** about the current state of the codebase. Many systems are described as complete and functional when they are actually broken or incomplete.
+
+### 📋 **DOCUMENTATION STATUS:**
+- ✅ **Updated**: Enemy system documentation now reflects actual broken state
+- ⚠️ **Needs Review**: All other system documentation may contain similar inaccuracies
+- 🔧 **Action Required**: Cross-reference all documentation against actual codebase
+
+### 🎯 **SPECIFIC INACCURACIES FOUND:**
+1. **Enemy System**: Described as "abilities-only" and "360-degree capable" - actually broken with collision offsets
+2. **Combat System**: Documented as unified - actually has multiple conflicting systems
+3. **Visual Systems**: Described as functional - actually disabled/broken in many areas
+
+### 📖 **HOW TO READ THIS DOCUMENTATION:**
+- **"INTENDED DESIGN"** sections describe goals, not current reality
+- **Warning boxes** indicate actual current state vs documentation claims
+- **Restoration plans** in `/usages and plans/` folder contain accurate current state
+
+---
+
+# Original Analysis Request (Historical)
+
 I need you to perform a comprehensive analysis of this Godot 4.4.1 2D game project. Please create detailed documentation organized into multiple markdown files based on related systems. Each file should be clearly named and contain thorough analysis of its respective area.
 
 ## Output Format Requirements
