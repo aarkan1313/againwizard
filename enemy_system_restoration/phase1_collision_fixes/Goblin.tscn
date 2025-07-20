@@ -1,0 +1,29 @@
+[gd_scene load_steps=4 format=3 uid="uid://bgoblin12345"]
+
+[ext_resource type="Script" uid="uid://ql3eb4ibbenk" path="res://scripts/Enemy.gd" id="1_goblin"]
+[ext_resource type="Texture2D" uid="uid://cci4y70lp5tr3" path="res://assets/sprites/goblin2.png" id="2_goblin"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_goblin"]
+radius = 49.1
+
+[node name="Goblin" type="CharacterBody2D" groups=["enemies"]]
+collision_layer = 2
+collision_mask = 5
+script = ExtResource("1_goblin")
+
+[node name="EnemySprite" type="Sprite2D" parent="."]
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("2_goblin")
+
+[node name="EnemyCollision" type="CollisionShape2D" parent="."]
+position = Vector2(0, 0)
+shape = SubResource("CircleShape2D_goblin")
+
+[node name="HealthBar" type="ProgressBar" parent="."]
+modulate = Color(1, 1, 1, 0.8)
+offset_left = -20.0
+offset_top = -45.0
+offset_right = 20.0
+offset_bottom = -40.0
+value = 100.0
+show_percentage = false
